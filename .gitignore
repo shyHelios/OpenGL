@@ -1,5 +1,8 @@
+/vendor
 /Debug
 /Release
+/bin
+*.lib
 *.dll
 *.exe
 *.pdb
