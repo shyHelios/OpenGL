@@ -10,12 +10,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/bin)
 
 set(SOURCES
     src/main.cpp
-    src/index_buffer.cpp
+    src/vertex_array.cpp
     src/vertex_buffer.cpp
+    src/index_buffer.cpp
+    src/shader.cpp
+    src/renderer.cpp
+    src/texture.cpp
+    vendor/stb_image/stb_image.cpp
 )
 
 add_executable(main ${SOURCES})
-target_include_directories(main PRIVATE "vendor/glfw-3.4/include" "vendor/glew/include")
+target_include_directories(main PRIVATE "vendor/glfw-3.4/include" "vendor/glew/include" "vendor/stb_image")
 target_link_directories(main PRIVATE
     "vendor/glew/lib/Release/x64"
     "vendor/glfw-3.4/lib-vc2022"

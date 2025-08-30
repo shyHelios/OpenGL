@@ -1,7 +1,7 @@
 /vendor
 /Debug
 /Release
-/bin
+/bin/
 *.lib
 *.dll
 *.exe

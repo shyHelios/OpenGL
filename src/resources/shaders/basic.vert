@@ -1,8 +1,12 @@
 #version 330 core
 
 layout(location = 0) in vec4 position;
+layout(location = 1) in vec2 tex_coord;
+
+out vec2 v_tex_coord; // 使用v_前缀从顶点着色器向片段着色器传递数据，这是一种约定
 
 void main()
 {
     gl_Position = position;
+    v_tex_coord = tex_coord; // 把纹理坐标传递给片段着色器
 }

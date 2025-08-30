@@ -6,67 +6,64 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#
 
 #include "index_buffer.h"
+#include "renderer.h"
+#include "shader.h"
+#include "texture.h"
+#include "vertex_array.h"
 #include "vertex_buffer.h"
+#include "vertex_buffer_layout.h"
 
 static void GLClearError()
 {
     while (glGetError() != GL_NO_ERROR) {};
 }
 
-static std::string ParseShader(const std::string &filepath)
+// Debug 回调函数
+void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                            const GLchar *message, const void *userParam)
 {
-    std::ifstream stream(filepath);
-    if (!stream.is_open())
+    std::string sourceStr;
+    switch (source)
     {
-        std::cout << "Can't open file: " << filepath << std::endl;
-        return "";
-    }
-    std::stringstream buffer;
-    buffer << stream.rdbuf();
-    return buffer.str();
-}
-
-static unsigned int CompileShader(unsigned int type, const std::string &source_code)
-{
-    unsigned int id = glCreateShader(type);
-    const char *src = source_code.c_str();
-    glShaderSource(id, 1, &src, nullptr);
-    glCompileShader(id);
-
-    int result;
-    glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-    if (result == GL_FALSE)
-    {
-        int length;
-        glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
-        char *message = (char *) alloca(length * sizeof(char));
-        glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "Failed to compile shader!" << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << std::endl;
-        std::cout << message << std::endl;
-        glDeleteShader(id);
-        return 0;
+        case GL_DEBUG_SOURCE_API: sourceStr = "API"; break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM: sourceStr = "Window System"; break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER: sourceStr = "Shader Compiler"; break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY: sourceStr = "Third Party"; break;
+        case GL_DEBUG_SOURCE_APPLICATION: sourceStr = "Application"; break;
+        case GL_DEBUG_SOURCE_OTHER: sourceStr = "Other"; break;
     }
 
-    return id;
-}
+    std::string typeStr;
+    switch (type)
+    {
+        case GL_DEBUG_TYPE_ERROR: typeStr = "Error"; break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: typeStr = "Deprecated"; break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: typeStr = "Undefined"; break;
+        case GL_DEBUG_TYPE_PORTABILITY: typeStr = "Portability"; break;
+        case GL_DEBUG_TYPE_PERFORMANCE: typeStr = "Performance"; break;
+        case GL_DEBUG_TYPE_MARKER: typeStr = "Marker"; break;
+        case GL_DEBUG_TYPE_PUSH_GROUP: typeStr = "Push Group"; break;
+        case GL_DEBUG_TYPE_POP_GROUP: typeStr = "Pop Group"; break;
+        case GL_DEBUG_TYPE_OTHER: typeStr = "Other"; break;
+    }
 
-static unsigned int CreateShader(const std::string &vertex_shader, const std::string &fragment_shader)
-{
-    unsigned int program = glCreateProgram();
-    unsigned int vs      = CompileShader(GL_VERTEX_SHADER, vertex_shader);
-    unsigned int fs      = CompileShader(GL_FRAGMENT_SHADER, fragment_shader);
+    std::string severityStr;
+    switch (severity)
+    {
+        case GL_DEBUG_SEVERITY_HIGH: severityStr = "HIGH"; break;
+        case GL_DEBUG_SEVERITY_MEDIUM: severityStr = "MEDIUM"; break;
+        case GL_DEBUG_SEVERITY_LOW: severityStr = "LOW"; break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: severityStr = "NOTIFICATION"; break;
+    }
 
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
-    glLinkProgram(program);
-    glValidateProgram(program);
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    return program;
+    std::cerr << "[OpenGL Debug Message]"
+              << " Source: " << sourceStr << " | Type: " << typeStr << " | ID: " << id << " | Severity: " << severityStr
+              << "\n"
+              << message << "\n"
+              << std::endl;
 }
 
 int main(void)
@@ -76,7 +73,7 @@ int main(void)
         return -1;
 
     // 开启opengl核心模式, 移除固定管线和API
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     GLFWwindow *window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
@@ -90,6 +87,12 @@ int main(void)
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
+    // 初始化glew之后才能使用OpenGL的函数，且初始化glew必须拥有一个OpenGL rendering上下文，
+    // 即必须在glfwMakeContextCurrent后调用
+    if (glewInit() != GLEW_OK)
+    {
+        std::cout << "GLEW init error!" << std::endl;
+    }
 
     // 垂直同步
     // 我们可以把显示器理解为一个只知道以固定速率从显存的前台缓冲区中取数据绘制的工人
@@ -100,22 +103,32 @@ int main(void)
     // 渲染完后才会绘制当前帧
     // glfwSwapInterval(2)表示显卡生成完后等待两次显示器的垂直消隐，这样显示器会显示同一帧两次，计算帧率（每秒显示的不同的画面个数）
     // 会是显示器刷新率的一半
-    glfwSwapInterval(1);
+    glfwSwapInterval(5);
 
-    if (glewInit() != GLEW_OK)
-    {
-        std::cout << "GLEW init error!" << std::endl;
-    }
+    // 启用调试输出
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+    glDebugMessageCallback(DebugCallback, nullptr);
 
     // 创建vao，核心模式下不创建无法绘制
     // vao只会在调用glVertexAttribPointer时记录VBO的绑定情况
-    unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    VertexArray va;
+    va.Bind();
 
-    float positions[] = {-0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f};
-    VertexBuffer vb(positions, 4 * 2 * sizeof(float));
+    float positions[] = {
+            -0.5f, -0.5f, 0.f, 0.f, // 0
+            0.5f,  -0.5f, 1.f, 0.f, // 1
+            0.5f,  0.5f,  1.f, 1.f, // 2
+            -0.5f, 0.5f,  0.f, 1.f  // 3
+    };
+    VertexBuffer vb(positions, 4 * 4 * sizeof(float));
     vb.Bind();
+
+    VertexBufferLayout layout;
+    layout.PushAttribute<float>(2); // 位置坐标
+    layout.PushAttribute<float>(2); // 纹理坐标
+    va.AddBuffer(vb, layout);
 
     // ibo
     unsigned int indices[] = {
@@ -125,39 +138,34 @@ int main(void)
     IndexBuffer ib(indices, 6);
     ib.Bind();
 
-    glEnableVertexAttribArray(0); // 启用顶点属性0，如果还有法线、UV坐标等，依次为1、2
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (const void *) 0);
+    // 创建shader
+    Shader shader;
+    shader.Configure({
+            {GL_VERTEX_SHADER,   "resources/shaders/basic.vert"},
+            {GL_FRAGMENT_SHADER, "resources/shaders/basic.frag"},
+    });
+    shader.Bind();
 
-    // 解绑vao，防止误操作
-    glBindVertexArray(vao);
 
-    std::string vert_shader_code = ParseShader("resources/shaders/basic.vert");
-    std::string frag_shader_code = ParseShader("resources/shaders/basic.frag");
-
-    unsigned int program = CreateShader(vert_shader_code, frag_shader_code);
-    glUseProgram(program);
-
-    int location = glGetUniformLocation(program, "u_color");
-    if (location == -1)
-    {
-        std::cout << "Get uniform location error!" << std::endl;
-    }
+    Texture texture("resources/cats.png");
+    texture.Bind();
+    shader.SetUniform1i("u_Texture", 0);
 
     float r         = 0.f;
     float increment = 0.05f;
+    Renderer renderer;
 
-    /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
         /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glUniform4f(location, r, 0.5f, 0.8f, 1.f);
+        renderer.Clear();
         r += increment;
         if (r > 1.f)
+        {
             r = 0.f;
+        }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        renderer.Draw(va, ib, shader);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -165,6 +173,24 @@ int main(void)
         /* Poll for and process events */
         glfwPollEvents();
     }
+
+    GLint maxTextureUnits = 0;
+
+    // 查询片段着色器可用纹理单元
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+    std::cout << "Fragment shader max texture units: " << maxTextureUnits << std::endl;
+
+    // 查询顶点着色器可用纹理单元
+    glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+    std::cout << "Vertex shader max texture units: " << maxTextureUnits << std::endl;
+
+    // 查询几何着色器可用纹理单元（如果使用几何着色器）
+    glGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+    std::cout << "Geometry shader max texture units: " << maxTextureUnits << std::endl;
+
+    GLint maxCombinedTextureUnits = 0;
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxCombinedTextureUnits);
+    std::cout << "Max combined texture units: " << maxCombinedTextureUnits << std::endl;
 
     // 销毁OpenGL上下文
     glfwTerminate();
