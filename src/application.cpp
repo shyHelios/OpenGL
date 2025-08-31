@@ -6,7 +6,12 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 #include "index_buffer.h"
 #include "renderer.h"
@@ -16,10 +21,9 @@
 #include "vertex_buffer.h"
 #include "vertex_buffer_layout.h"
 
-static void GLClearError()
-{
-    while (glGetError() != GL_NO_ERROR) {};
-}
+glm::mat4 proj    = glm::ortho(0.f, 640.f, 0.f, 480.f, -1.f, 1.f);
+int window_width  = 1280;
+int window_height = 720;
 
 // Debug 回调函数
 void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
@@ -66,6 +70,16 @@ void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severi
               << std::endl;
 }
 
+void FrameBufferSizeCallback(GLFWwindow *window, int width, int height)
+{
+    // std::cout << "Frame buffer resize: ";
+    // std::cout << width << " " << height << std::endl;
+    window_width  = width;
+    window_height = height;
+    proj          = glm::ortho(0.f, static_cast<float>(width), 0.f, static_cast<float>(height), -1.f, 1.f);
+    glViewport(0, 0, width, height);
+}
+
 int main(void)
 {
     /* Initialize the library */
@@ -76,7 +90,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow *window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(window_width, window_height, "Hello World", NULL, NULL);
     if (!window)
     {
         std::cout << "Failed to create window" << std::endl;
@@ -111,16 +125,24 @@ int main(void)
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
     glDebugMessageCallback(DebugCallback, nullptr);
 
+    // 窗口大小改变时的回调函数
+    glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
+
+    // 开启颜色混合
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // 创建vao，核心模式下不创建无法绘制
     // vao只会在调用glVertexAttribPointer时记录VBO的绑定情况
     VertexArray va;
     va.Bind();
 
+    // 模型空间的各个顶点位置
     float positions[] = {
-            -0.5f, -0.5f, 0.f, 0.f, // 0
-            0.5f,  -0.5f, 1.f, 0.f, // 1
-            0.5f,  0.5f,  1.f, 1.f, // 2
-            -0.5f, 0.5f,  0.f, 1.f  // 3
+            -50.f, -50.f, 0.f, 0.f, // 0
+            50.f,  -50.f, 1.f, 0.f, // 1
+            50.f,  50.f,  1.f, 1.f, // 2
+            -50.f, 50.f,  0.f, 1.f  // 3
     };
     VertexBuffer vb(positions, 4 * 4 * sizeof(float));
     vb.Bind();
@@ -144,53 +166,97 @@ int main(void)
             {GL_VERTEX_SHADER,   "resources/shaders/basic.vert"},
             {GL_FRAGMENT_SHADER, "resources/shaders/basic.frag"},
     });
-    shader.Bind();
-
 
     Texture texture("resources/cats.png");
     texture.Bind();
     shader.SetUniform1i("u_Texture", 0);
 
-    float r         = 0.f;
-    float increment = 0.05f;
     Renderer renderer;
+
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+
+    ImGuiStyle &style = ImGui::GetStyle();
+    float main_scale  = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
+    style.ScaleAllSizes(main_scale); // Bake a fixed style scale. (until we have a solution for dynamic style scaling,
+    style.FontScaleDpi = main_scale;
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    const char *glsl_version = "#version 330";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    bool show_demo_window    = true;
+    bool show_another_window = false;
+    ImVec4 clear_color       = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    // 加载字体
+    ImGuiIO &io = ImGui::GetIO();
+    // ImFont *font             = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttf", 18.0f, NULL,
+    //                                                         io.Fonts->GetGlyphRangesChineseFull());
+    // IM_ASSERT(font != nullptr);
+
+    glm::vec3 translate_a(200.f, 200.f, 0.f);
+    glm::vec3 translate_b(400.f, 200.f, 0.f);
 
     while (!glfwWindowShouldClose(window))
     {
-        /* Render here */
-        renderer.Clear();
-        r += increment;
-        if (r > 1.f)
-        {
-            r = 0.f;
-        }
+        // glfw处理输入
+        glfwPollEvents();
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        renderer.Clear(); // OpenGL清屏
+
+        /* Render here */
+        shader.Bind();
+        glm::mat4 model = glm::translate(glm::mat4(1.f), translate_a);
+        glm::mat4 mvp   = proj * model;
+        shader.SetUniformMat4f("u_MVP", mvp);
         renderer.Draw(va, ib, shader);
 
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
+        model = glm::translate(glm::mat4(1.f), translate_b);
+        mvp   = proj * model;
+        shader.SetUniformMat4f("u_MVP", mvp);
+        renderer.Draw(va, ib, shader);
 
-        /* Poll for and process events */
-        glfwPollEvents();
+        {
+            static float f     = 0.0f;
+            static int counter = 0;
+
+            ImGui::Begin("Hello, world!");
+
+            ImGui::Text("This is some useful text.");          // Display some text (you can use a format strings too)
+            ImGui::Checkbox("Demo Window", &show_demo_window); // Edit bools storing our window open/close state
+            ImGui::Checkbox("Another Window", &show_another_window);
+
+            ImGui::SliderFloat3("translate a", &translate_a.x, 0.0f,
+                                1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+            ImGui::SliderFloat3("translate b", &translate_b.x, 0.0f,
+                                1.0f);                                // Edit 1 float using a slider from 0.0f to 1.0f
+            ImGui::ColorEdit3("clear color", (float *) &clear_color); // Edit 3 floats representing a color
+
+            // 按钮被点击返回true
+            if (ImGui::Button("Button"))
+                counter++;
+            ImGui::SameLine();
+            ImGui::Text("counter = %d", counter);
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::End();
+        }
+        ImGui::Render();                                        // ImGui准备DrawData
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); // ImGui执行绘制
+
+        // 交换缓冲区显示ImGui和我们自己的绘制内容
+        glfwSwapBuffers(window);
     }
 
-    GLint maxTextureUnits = 0;
-
-    // 查询片段着色器可用纹理单元
-    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
-    std::cout << "Fragment shader max texture units: " << maxTextureUnits << std::endl;
-
-    // 查询顶点着色器可用纹理单元
-    glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
-    std::cout << "Vertex shader max texture units: " << maxTextureUnits << std::endl;
-
-    // 查询几何着色器可用纹理单元（如果使用几何着色器）
-    glGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
-    std::cout << "Geometry shader max texture units: " << maxTextureUnits << std::endl;
-
-    GLint maxCombinedTextureUnits = 0;
-    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxCombinedTextureUnits);
-    std::cout << "Max combined texture units: " << maxCombinedTextureUnits << std::endl;
+    // ImGui清理
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     // 销毁OpenGL上下文
     glfwTerminate();

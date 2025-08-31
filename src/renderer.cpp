@@ -12,6 +12,7 @@ Renderer::~Renderer() {}
 
 void Renderer::Clear() const
 {
+    // 在没绑定帧缓冲时，清理的是后缓冲区的颜色数据
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
