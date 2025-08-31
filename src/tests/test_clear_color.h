@@ -16,6 +16,7 @@ public:
     virtual void OnImGuiRender() override;
 private:
     float m_clear_color[4];
+    float m_original_clear_color[4];
 };
 
 NAMESPACE_END(test)

@@ -13,15 +13,10 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-#include "index_buffer.h"
-#include "renderer.h"
-#include "shader.h"
-#include "texture.h"
-#include "vertex_array.h"
-#include "vertex_buffer.h"
-#include "vertex_buffer_layout.h"
+#include "tests/test.h"
+#include "tests/test_clear_color.h"
+#include "tests/test_texture_2d.h"
 
-glm::mat4 proj    = glm::ortho(0.f, 640.f, 0.f, 480.f, -1.f, 1.f);
 int window_width  = 1280;
 int window_height = 720;
 
@@ -63,11 +58,17 @@ void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severi
         case GL_DEBUG_SEVERITY_NOTIFICATION: severityStr = "NOTIFICATION"; break;
     }
 
-    std::cerr << "[OpenGL Debug Message]"
-              << " Source: " << sourceStr << " | Type: " << typeStr << " | ID: " << id << " | Severity: " << severityStr
-              << "\n"
-              << message << "\n"
-              << std::endl;
+    std::ofstream log_file("opengl_log.txt", std::ios::app);
+    if (!log_file.is_open())
+    {
+        std::cerr << "Failed to open log file!\n";
+    }
+
+    log_file << "[OpenGL Debug Message]"
+             << " Source: " << sourceStr << " | Type: " << typeStr << " | ID: " << id << " | Severity: " << severityStr
+             << "\n"
+             << message << "\n"
+             << std::endl;
 }
 
 void FrameBufferSizeCallback(GLFWwindow *window, int width, int height)
@@ -76,7 +77,7 @@ void FrameBufferSizeCallback(GLFWwindow *window, int width, int height)
     // std::cout << width << " " << height << std::endl;
     window_width  = width;
     window_height = height;
-    proj          = glm::ortho(0.f, static_cast<float>(width), 0.f, static_cast<float>(height), -1.f, 1.f);
+    // proj          = glm::ortho(0.f, static_cast<float>(width), 0.f, static_cast<float>(height), -1.f, 1.f);
     glViewport(0, 0, width, height);
 }
 
@@ -132,47 +133,6 @@ int main(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // 创建vao，核心模式下不创建无法绘制
-    // vao只会在调用glVertexAttribPointer时记录VBO的绑定情况
-    VertexArray va;
-    va.Bind();
-
-    // 模型空间的各个顶点位置
-    float positions[] = {
-            -50.f, -50.f, 0.f, 0.f, // 0
-            50.f,  -50.f, 1.f, 0.f, // 1
-            50.f,  50.f,  1.f, 1.f, // 2
-            -50.f, 50.f,  0.f, 1.f  // 3
-    };
-    VertexBuffer vb(positions, 4 * 4 * sizeof(float));
-    vb.Bind();
-
-    VertexBufferLayout layout;
-    layout.PushAttribute<float>(2); // 位置坐标
-    layout.PushAttribute<float>(2); // 纹理坐标
-    va.AddBuffer(vb, layout);
-
-    // ibo
-    unsigned int indices[] = {
-            0, 1, 2, // first triangle
-            2, 3, 0  // second triangle
-    };
-    IndexBuffer ib(indices, 6);
-    ib.Bind();
-
-    // 创建shader
-    Shader shader;
-    shader.Configure({
-            {GL_VERTEX_SHADER,   "resources/shaders/basic.vert"},
-            {GL_FRAGMENT_SHADER, "resources/shaders/basic.frag"},
-    });
-
-    Texture texture("resources/cats.png");
-    texture.Bind();
-    shader.SetUniform1i("u_Texture", 0);
-
-    Renderer renderer;
-
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
 
@@ -186,71 +146,60 @@ int main(void)
     const char *glsl_version = "#version 330";
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    bool show_demo_window    = true;
-    bool show_another_window = false;
-    ImVec4 clear_color       = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
     // 加载字体
-    ImGuiIO &io = ImGui::GetIO();
-    // ImFont *font             = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttf", 18.0f, NULL,
-    //                                                         io.Fonts->GetGlyphRangesChineseFull());
-    // IM_ASSERT(font != nullptr);
+    ImGuiIO &io  = ImGui::GetIO();
+    ImFont *font = io.Fonts->AddFontFromFileTTF("resources/msyh.ttf", 18.0f, NULL,
+                                                io.Fonts->GetGlyphRangesChineseFull());
+    IM_ASSERT(font != nullptr);
 
-    glm::vec3 translate_a(200.f, 200.f, 0.f);
-    glm::vec3 translate_b(400.f, 200.f, 0.f);
+    test::Test *current_test  = nullptr;
+    test::TestMenu *test_menu = new test::TestMenu(current_test);
+
+    // 指定默认的test为menu，每次从menu启动
+    current_test = test_menu;
+
+    test_menu->RegisterTest<test::TestClearColor>("TestClearColor");
+    test_menu->RegisterTest<test::TestTexture2D>("TestTexture2D");
 
     while (!glfwWindowShouldClose(window))
     {
         // glfw处理输入
         glfwPollEvents();
 
+        // OpenGL清屏
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        // ImGui渲染开始
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        renderer.Clear(); // OpenGL清屏
 
-        /* Render here */
-        shader.Bind();
-        glm::mat4 model = glm::translate(glm::mat4(1.f), translate_a);
-        glm::mat4 mvp   = proj * model;
-        shader.SetUniformMat4f("u_MVP", mvp);
-        renderer.Draw(va, ib, shader);
-
-        model = glm::translate(glm::mat4(1.f), translate_b);
-        mvp   = proj * model;
-        shader.SetUniformMat4f("u_MVP", mvp);
-        renderer.Draw(va, ib, shader);
-
+        if (current_test)
         {
-            static float f     = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!");
-
-            ImGui::Text("This is some useful text.");          // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window); // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat3("translate a", &translate_a.x, 0.0f,
-                                1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::SliderFloat3("translate b", &translate_b.x, 0.0f,
-                                1.0f);                                // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float *) &clear_color); // Edit 3 floats representing a color
-
-            // 按钮被点击返回true
-            if (ImGui::Button("Button"))
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            current_test->OnUpdate(0.f);
+            current_test->OnRender();
+            ImGui::Begin("Test");
+            if (current_test != test_menu && ImGui::Button("return"))
+            {
+                delete current_test;
+                current_test = test_menu;
+            }
+            current_test->OnImGuiRender();
             ImGui::End();
         }
+
         ImGui::Render();                                        // ImGui准备DrawData
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); // ImGui执行绘制
 
         // 交换缓冲区显示ImGui和我们自己的绘制内容
         glfwSwapBuffers(window);
+    }
+
+    delete current_test;
+
+    if (current_test != test_menu)
+    {
+        delete test_menu;
     }
 
     // ImGui清理

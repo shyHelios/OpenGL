@@ -67,3 +67,9 @@ add_custom_target(COPY_SHADERS ALL COMMAND ${CMAKE_COMMAND} -E copy_directory
     "$<TARGET_FILE_DIR:main>/resources"
     COMMENT "Copying shaders into binary directory"
 )
+
+add_custom_target(COPY_FONT ALL COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_SOURCE_DIR}/vendor/imgui/msyh.ttf"
+    "$<TARGET_FILE_DIR:main>/resources"
+    COMMENT "Copying font into binary directory"
+)

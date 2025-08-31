@@ -5,9 +5,16 @@
 
 NAMESPACE_BEGIN(test)
 
-TestClearColor::TestClearColor() : m_clear_color{0.2f, 0.3f, 0.8f, 1.f} {}
+TestClearColor::TestClearColor() : m_clear_color{0.2f, 0.3f, 0.8f, 1.f}
+{
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, m_original_clear_color);
+}
 
-TestClearColor::~TestClearColor() {}
+TestClearColor::~TestClearColor()
+{
+    glClearColor(m_original_clear_color[0], m_original_clear_color[1], m_original_clear_color[2],
+                 m_original_clear_color[3]);
+}
 
 void TestClearColor::OnUpdate(float delta_time) {}
 
@@ -17,7 +24,8 @@ void TestClearColor::OnRender()
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void TestClearColor::OnImGuiRender() {
+void TestClearColor::OnImGuiRender()
+{
     ImGui::ColorEdit4("Clear Color", m_clear_color);
 }
 
