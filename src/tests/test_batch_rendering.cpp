@@ -48,7 +48,7 @@ TestBatchRendering::TestBatchRendering() :
     layout.PushAttribute<float>(2); // 位置坐标
     layout.PushAttribute<float>(3); // 颜色
     layout.PushAttribute<float>(2); // 纹理坐标
-    layout.PushAttribute<float>(1); //纹理id
+    layout.PushAttribute<float>(1); // 纹理id
     m_vao->AddBuffer(*m_vbo, layout);
 
     // ibo
@@ -62,21 +62,22 @@ TestBatchRendering::TestBatchRendering() :
     m_ibo = std::make_unique<IndexBuffer>(indices, 12);
     m_ibo->Bind();
 
-    m_texture_0 = std::make_unique<Texture>("resources/cat.png");
-    m_texture_0->Bind(0);
-
-    m_texture_1 = std::make_unique<Texture>("resources/dog.png");
-    m_texture_1->Bind(1);
-
     // 创建shader
     const std::unordered_map<unsigned int, std::string> shader_files{
             {GL_VERTEX_SHADER,   "resources/shaders/batch_color.vert"},
             {GL_FRAGMENT_SHADER, "resources/shaders/batch_color.frag"},
     };
+
+    m_texture_0 = std::make_unique<Texture>("resources/cat.png", 0);
+    m_texture_0->Bind();
+
+    m_texture_1 = std::make_unique<Texture>("resources/dog.png", 1);
+    m_texture_1->Bind();
+
     m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();
-
-    m_shader->SetUniform1i("u_Texture", 0);
+    int samplers[] = {0, 1};
+    m_shader->SetUniform1iv("u_Texture", 2, samplers);
 }
 
 TestBatchRendering::~TestBatchRendering() {}

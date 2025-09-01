@@ -90,7 +90,7 @@ int main(void)
 
     // 开启opengl核心模式, 移除固定管线和API
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     GLFWwindow *window = glfwCreateWindow(window_width, window_height, "Hello World", NULL, NULL);
     if (!window)
@@ -157,7 +157,8 @@ int main(void)
     test::TestMenu *test_menu = new test::TestMenu(current_test);
 
     // 指定默认的test为menu，每次从menu启动
-    current_test = test_menu;
+    // current_test = test_menu;
+    current_test = new test::TestBatchRendering();
 
     test_menu->RegisterTest<test::TestClearColor>("TestClearColor");
     test_menu->RegisterTest<test::TestTexture2D>("TestTexture2D");
@@ -169,6 +170,7 @@ int main(void)
         glfwPollEvents();
 
         // OpenGL清屏
+        glClearColor(0.5f, 0.5f, 0.5f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // ImGui渲染开始

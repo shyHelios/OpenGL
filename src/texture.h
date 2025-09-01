@@ -5,10 +5,10 @@
 class Texture
 {
 public:
-    Texture(const std::string &filepath);
+    Texture(const std::string &filepath, unsigned int slot = 0);
     ~Texture();
 
-    void Bind(unsigned int slot = 0) const;
+    void Bind() const;
     void Unbind() const;
 
 private:
