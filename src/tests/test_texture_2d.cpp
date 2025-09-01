@@ -19,7 +19,11 @@ extern int window_height;
 NAMESPACE_BEGIN(test)
 
 TestTexture2D::TestTexture2D() :
-    m_vao(), m_vbo(), m_shader(), m_translation_a(100.f, 200.f, 0.f), m_translation_b(100.f, 100.f, 0.f)
+    m_vao(),
+    m_vbo(),
+    m_shader(),
+    m_translation_a(100.f, 200.f, 0.f),
+    m_translation_b(100.f, 100.f, 0.f)
 {
     // 创建vao，核心模式下不创建无法绘制
     // vao只会在调用glVertexAttribPointer时记录VBO的绑定情况
@@ -53,11 +57,11 @@ TestTexture2D::TestTexture2D() :
     m_texture->Bind();
 
     // 创建shader
-    m_shader = std::make_unique<Shader>();
-    m_shader->Configure({
+    const std::unordered_map<unsigned int, std::string> shader_files{
             {GL_VERTEX_SHADER,   "resources/shaders/basic.vert"},
             {GL_FRAGMENT_SHADER, "resources/shaders/basic.frag"},
-    });
+    };
+    m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();
     m_shader->SetUniform1i("u_Texture", 0);
 }

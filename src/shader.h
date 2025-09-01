@@ -8,10 +8,8 @@
 class Shader
 {
 public:
-    Shader();
+    Shader(const std::unordered_map<unsigned int, std::string> &shader_files);
     ~Shader();
-
-    void Configure(const std::unordered_map<unsigned int, std::string> &shader_files);
 
     void Bind() const;
     void Unbind() const;
@@ -21,7 +19,7 @@ public:
     void SetUniformMat4f(const std::string &name, const glm::mat4 &matrix);
 
 private:
-    int GetUniformLocation(const std::string &name);
+    int GetUniformLocation(const std::string &name) const;
 
     /**
      * @brief 从指定文件加载shader源代码
@@ -29,7 +27,7 @@ private:
      * @param filepath 文件路径
      * @return std::string shader源代码
      */
-    std::string LoadShaderSource(const std::string &filepath);
+    static std::string LoadShaderSource(const std::string &filepath);
 
     /**
      * @brief 编译指定类型的shader，
@@ -44,4 +42,5 @@ private:
 
     // 顶点、片段、几何、细分着色器的源代码，从GLenum映射到源代码
     std::unordered_map<unsigned int, std::string> m_shader_sources;
+    mutable std::unordered_map<std::string, int> m_uniform_location_cache;
 };

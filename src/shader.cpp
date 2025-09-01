@@ -7,15 +7,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
-Shader::Shader() {}
-
-Shader::~Shader()
-{
-    glDeleteProgram(m_renderer_id);
-}
-
-void Shader::Configure(const std::unordered_map<unsigned int, std::string> &shader_files)
-{
+Shader::Shader(const std::unordered_map<unsigned int, std::string> &shader_files) {
     for (const auto [type, filepath] : shader_files)
     {
         m_shader_sources[type] = LoadShaderSource(filepath);
@@ -33,6 +25,10 @@ void Shader::Configure(const std::unordered_map<unsigned int, std::string> &shad
     glValidateProgram(m_renderer_id);
 }
 
+Shader::~Shader()
+{
+    glDeleteProgram(m_renderer_id);
+}
 
 void Shader::Bind() const
 {
@@ -61,9 +57,15 @@ void Shader::SetUniformMat4f(const std::string &name, const glm::mat4 &matrix)
     glUniformMatrix4fv(location, 1, GL_FALSE, &matrix[0][0]);
 }
 
-int Shader::GetUniformLocation(const std::string &name)
+int Shader::GetUniformLocation(const std::string &name) const
 {
+    if (m_uniform_location_cache.find(name) != m_uniform_location_cache.end())
+    {
+        return m_uniform_location_cache[name];
+    }
+
     int location = glGetUniformLocation(m_renderer_id, name.c_str());
+    m_uniform_location_cache[name] = location;
     if (location == -1)
     {
         std::cout << "Get uniform location error!" << std::endl;
@@ -100,7 +102,7 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string &source_
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         char *message = (char *) alloca(length * sizeof(char));
         glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "Failed to compile shader!" << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << std::endl;
+        std::cout << "Failed to compile shader: " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << std::endl;
         std::cout << message << std::endl;
         glDeleteShader(id);
         return 0;

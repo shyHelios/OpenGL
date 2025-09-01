@@ -16,6 +16,7 @@
 #include "tests/test.h"
 #include "tests/test_clear_color.h"
 #include "tests/test_texture_2d.h"
+#include "tests/test_batch_rendering.h"
 
 int window_width  = 1280;
 int window_height = 720;
@@ -160,6 +161,7 @@ int main(void)
 
     test_menu->RegisterTest<test::TestClearColor>("TestClearColor");
     test_menu->RegisterTest<test::TestTexture2D>("TestTexture2D");
+    test_menu->RegisterTest<test::TestBatchRendering>("TestBatchRendering");
 
     while (!glfwWindowShouldClose(window))
     {
