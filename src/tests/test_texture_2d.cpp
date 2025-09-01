@@ -63,7 +63,7 @@ TestTexture2D::TestTexture2D() :
     };
     m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();
-    m_shader->SetUniform1i("u_Texture", 0);
+    m_shader->SetUniform1i("u_Texture", 1);
 }
 
 TestTexture2D::~TestTexture2D() {}

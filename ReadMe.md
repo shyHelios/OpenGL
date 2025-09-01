@@ -305,12 +305,98 @@ PPI=\frac{水平像素数}{屏幕宽度（英寸）}=\frac{垂直像素数}{屏�
 $$
 因此这块显示器的PPI为$\frac{3840}{23.5} \approx 163$。
 
-SDL提供了一些API，用于高PPI显示器的渲染处理：
-
-
-
 ## 4️⃣ 总结
 
 - **窗口大小、UI 元素尺寸** → 逻辑像素（程序指定）
 - **帧缓冲大小、OpenGL 渲染尺寸** → 物理像素（可能大于逻辑像素，受 DPI 缩放影响）
 - **DPI 缩放** 是逻辑像素到物理像素的桥梁，程序通常不直接处理物理像素，除非涉及精确渲染。
+
+# 6、OpenGL DSA接口
+
+从4.5版本开始，OpenGL引入了一系列DSA接口，让我们在操作OpenGL中的一系列object时不需要先选中再操作，在我们知道对象的id的情况下可以直接一行代码搞定。
+
+以创建纹理为例，在4.5之前，我们使用如下的代码创建纹理：
+
+```C++
+    glGenTextures(1, &m_renderer_id);
+    glBindTexture(GL_TEXTURE_2D, m_renderer_id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_local_buffer);
+```
+
+在4.5+，代码如下：
+
+```C++
+    glCreateTextures(GL_TEXTURE_2D, 1, &m_renderer_id);
+    glBindTextureUnit(slot, m_renderer_id);
+
+    glTextureParameteri(m_renderer_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(m_renderer_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(m_renderer_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(m_renderer_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTextureStorage2D(m_renderer_id, 1, GL_RGBA8, m_width, m_height); // 分配存储（现代 DSA，替代 glTexImage2D）
+    glTextureSubImage2D(m_renderer_id, 0, 0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE,
+                        m_local_buffer); // 上传像素数据
+```
+
+有三个原因让我们使用DSA接口
+
+1. **不容易出错**
+
+   相比于传统的状态机接口， `glTexParameteri` 操作的对象完全取决于当前绑定的 `GL_TEXTURE_2D`，这带来几个问题：
+
+   - 需要不断 bind / unbind，容易出错。
+   - 调用顺序对正确性影响很大。
+
+   DSA接口`glTextureParameteri`则直接指定对象，不需要再考虑 “现在谁绑在 GL_TEXTURE_2D 上”，逻辑更清晰。
+
+2. ### 减少状态切换（性能更好）
+
+   绑定操作本身是有开销的（驱动层需要修改上下文状态）。
+    在复杂场景下，频繁的 `glBindTexture`、`glBindBuffer`、`glBindFramebuffer` 都会拖慢性能。
+    DSA 避免了这种多余的绑定。
+
+3. 更符合现代 API 设计
+
+   现代图形 API（如 Vulkan、D3D12、Metal）都放弃了全局状态机，采用“直接操作资源”的模型。DSA 让 OpenGL 的代码风格更接近这些 API，学习和迁移更容易。
+
+但是需要注意，OpenGL 的核心仍然是 **全局状态机**（context + state machine）-所有渲染、资源操作最终都会修改 context 中的某些状态，GPU 执行时依赖这些状态，这一点在 DSA 出现后也没有变。
+
+#### 传统接口 vs DSA 的区别
+
+- **传统接口**（pre-4.5）：
+   需要先 `glBindXxx(target, id)`，再调用 `glXxxParameteri(target, ...)`。
+   驱动内部会查“当前 target 绑定的对象”，然后修改它。
+- **DSA 接口**（4.5+）：
+   直接传入对象 ID，例如 `glTextureParameteri(tex, pname, param)`。
+   驱动内部会根据传入的 ID 定位到对象，然后修改它。
+
+👉 **区别仅在于：驱动查找对象的方式不同**
+
+- 传统接口：从绑定点查找。
+- DSA 接口：直接用对象 ID。
+
+最终效果：都是修改了 GPU 上的对象数据，渲染流水线和运行模式没有本质变化。
+
+#### 为什么要引入 DSA
+
+引入 DSA 并不是因为 GPU 的工作模式变了，而是为了：
+
+- **减少冗余的状态绑定**（性能 + 清晰度）
+- **降低开发者心智负担**（不用再担心当前绑定的是哪个对象）
+- **与现代 API 接轨**（Vulkan、D3D12 没有全局状态机，都是显式对象操作）
+
+#### 驱动层实现
+
+很多驱动在实现 DSA 时，**内部依然会走绑定路径**：
+
+- 例如 `glTextureParameteri(tex, ...)` 可能会在驱动里临时绑定 `tex`，调用旧的逻辑，再解绑。
+- 只是在 API 层隐藏了这些细节，对开发者透明。
+- 所以它并不是 GPU 硬件层面上的“革命性变化”，而是 API 的改进。
+

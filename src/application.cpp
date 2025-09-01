@@ -1,5 +1,4 @@
 #include <array>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -59,13 +58,7 @@ void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severi
         case GL_DEBUG_SEVERITY_NOTIFICATION: severityStr = "NOTIFICATION"; break;
     }
 
-    std::ofstream log_file("opengl_log.txt", std::ios::app);
-    if (!log_file.is_open())
-    {
-        std::cerr << "Failed to open log file!\n";
-    }
-
-    log_file << "[OpenGL Debug Message]"
+    std::cout << "[OpenGL Debug Message]"
              << " Source: " << sourceStr << " | Type: " << typeStr << " | ID: " << id << " | Severity: " << severityStr
              << "\n"
              << message << "\n"
@@ -109,6 +102,8 @@ int main(void)
     {
         std::cout << "GLEW init error!" << std::endl;
     }
+
+    std::cout << glGetString(GL_VERSION) << std::endl;
 
     // 垂直同步
     // 我们可以把显示器理解为一个只知道以固定速率从显存的前台缓冲区中取数据绘制的工人

@@ -69,10 +69,10 @@ TestBatchRendering::TestBatchRendering() :
     };
 
     m_texture_0 = std::make_unique<Texture>("resources/cat.png", 0);
-    m_texture_0->Bind();
+    // m_texture_0->Unbind();
 
     m_texture_1 = std::make_unique<Texture>("resources/dog.png", 1);
-    m_texture_1->Bind();
+    // m_texture_1->Unbind();
 
     m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();
