@@ -332,7 +332,8 @@ $$
 在4.5+，代码如下：
 
 ```C++
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_renderer_id);
+// 必须调用这个，不能使用glGenTextures，否则glBindTextureUnit会报错，glGenTextures只是分配id，这个函数会创建texture2d对象 
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_renderer_id); 
     glBindTextureUnit(slot, m_renderer_id);
 
     glTextureParameteri(m_renderer_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -399,4 +400,99 @@ $$
 - 例如 `glTextureParameteri(tex, ...)` 可能会在驱动里临时绑定 `tex`，调用旧的逻辑，再解绑。
 - 只是在 API 层隐藏了这些细节，对开发者透明。
 - 所以它并不是 GPU 硬件层面上的“革命性变化”，而是 API 的改进。
+
+# 7、OpenGL 4.5+和以前的关键区别
+
+## 7.1shader program创建
+
+- **传统 OpenGL pipeline 问题**
+
+  早期 OpenGL：每个 program object 包含完整的 shader 阶段（vertex + fragment + optional geometry/tessellation）。如果你只想替换片元着色器，就必须重新创建一个新的 program object，导致难以复用 shader，shader 管理灵活性低。
+
+- **Separable Program + Program Pipeline**
+
+  OpenGL 4.1/4.5 引入 **separable program** 和 **program pipeline**。
+
+  特点：
+
+  - 每个 shader 阶段可以单独编译为 **独立 program**。
+  - 用 program pipeline 将它们组合成一个完整的渲染 pipeline。
+  - 可以在运行时灵活替换单个 shader 阶段，而无需重建整个 program。
+
+## 7.2 vertex array、vertex buffer和index buffer的创建和绑定
+
+假设顶点结构：**位置 (vec3) + 颜色 (vec3)**，存在同一个 VBO 里。
+
+```C++
+struct Vertex {
+    float pos[3];
+    float color[3];
+};
+```
+
+新版本代码如下：
+
+```C++
+GLuint vao, vbo;
+glCreateVertexArrays(1, &vao);
+glCreateBuffers(1, &vbo);
+glNamedBufferData(vbo, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+// 把 vbo 绑定到 VAO 的 binding point 0
+glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(Vertex));
+
+// attribute 0 → position (vec3)
+glEnableVertexArrayAttrib(vao, 0);
+glVertexArrayAttribFormat(vao, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+glVertexArrayAttribBinding(vao, 0, 0);  // 指定attribute 0的binding point为0
+
+// attribute 1 → color (vec3)
+glEnableVertexArrayAttrib(vao, 1);
+glVertexArrayAttribFormat(vao, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, color)); // 说明属性格式
+glVertexArrayAttribBinding(vao, 1, 0);  // 指定attribute 1的binding point为0
+```
+
+这里：
+
+- `bindingindex = 0` → 意味着两个 attribute（位置和颜色）都从 **binding point 0**（也就是 `vbo`）里取数据。
+
+如果以后想把颜色单独放在另一个 VBO，只需要：
+
+```C++
+glVertexArrayVertexBuffer(vao, 1, colorVbo, 0, sizeof(Color));
+glVertexArrayAttribBinding(vao, 1, 1);  // attribute 1 改用 binding point 1
+```
+
+因此我们可以把 **Binding Point** 看作一个 **桥梁 (bridge / slot)**：
+
+- **VBO → Binding Point**：用
+
+  ```C++
+  glVertexArrayVertexBuffer(vao, bindingIndex, vbo, offset, stride);
+  ```
+
+  把一个 VBO 绑定到某个 binding point。
+
+- **Attribute → Binding Point**：用
+
+  ```C++
+  glVertexArrayAttribBinding(vao, attribIndex, bindingIndex);
+  ```
+
+  多个 Attribute 可以绑定到一个 Binding Point，例如：位置 + 颜色 + 法线都存储在一个 VBO 里（交错格式 Interleaved）。
+
+  ```C++
+  glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(Vertex));
+  
+  glVertexArrayAttribBinding(vao, 0, 0); // pos -> binding 0
+  glVertexArrayAttribBinding(vao, 1, 0); // color -> binding 0
+  glVertexArrayAttribBinding(vao, 2, 0); // normal -> binding 0
+  ```
+
+
+
+
+# 8、动态上传顶点数据
+
+ 在实际开发中我们经常需要修改顶点缓冲区的数据，而不是在程序一开始时就创建数据并上传至GPU，在OpenGL中有几种方法实现动态缓冲区中的数据，下面我们开始列举。
 

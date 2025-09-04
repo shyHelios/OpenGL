@@ -8,9 +8,6 @@ public:
     Texture(const std::string &filepath, unsigned int slot = 0);
     ~Texture();
 
-    void Bind() const;
-    void Unbind() const;
-
 private:
     unsigned int m_renderer_id;
     std::string m_filepath;

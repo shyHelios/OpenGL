@@ -1,5 +1,7 @@
 #pragma once
 
+#include <GL/glew.h>
+
 /**
  * @brief OpenGL中顶点缓冲的抽象类
  * 举例说明，假设我有一个3D宇宙飞船的模型，我需要绘制这个宇宙飞船
@@ -10,13 +12,9 @@
 class VertexBuffer
 {
 public:
-    VertexBuffer(const void *data, unsigned int size);
+    friend class VertexArray;
+    VertexBuffer(const void *data, unsigned int size, GLenum usage = GL_STATIC_DRAW);
     ~VertexBuffer();
-
-    // 在OpenGL中，bind可以理解为选中，表示我要操作当前这个对象
-    // unbind是取消选中
-    void Bind() const;
-    void Unbind() const;
 
 private:
     unsigned int m_renderer_id;

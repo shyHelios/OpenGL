@@ -49,12 +49,3 @@ Texture::~Texture()
 {
     glDeleteTextures(1, &m_renderer_id);
 }
-
-void Texture::Bind() const
-{
-    glBindTexture(GL_TEXTURE_2D, m_renderer_id);
-}
-void Texture::Unbind() const
-{
-    glBindTexture(GL_TEXTURE_2D, 0);
-}

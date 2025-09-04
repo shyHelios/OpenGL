@@ -27,7 +27,7 @@ TestBatchRendering::TestBatchRendering() :
     // 创建vao，核心模式下不创建无法绘制
     // vao只会在调用glVertexAttribPointer时记录VBO的绑定情况
     m_vao = std::make_unique<VertexArray>();
-    m_vao->Bind();
+    // m_vao->Bind();
 
     // 模型空间的各个顶点位置
     float positions[] = {
@@ -42,13 +42,12 @@ TestBatchRendering::TestBatchRendering() :
             100.f, 50.f,  0.2f, 0.3f, 0.8f, 0.f, 1.f, 1.f  // 7
     };
     m_vbo = std::make_unique<VertexBuffer>(positions, 8 * 8 * sizeof(float));
-    m_vbo->Bind();
-
     VertexBufferLayout layout;
     layout.PushAttribute<float>(2); // 位置坐标
     layout.PushAttribute<float>(3); // 颜色
     layout.PushAttribute<float>(2); // 纹理坐标
     layout.PushAttribute<float>(1); // 纹理id
+
     m_vao->AddBuffer(*m_vbo, layout);
 
     // ibo
@@ -60,7 +59,7 @@ TestBatchRendering::TestBatchRendering() :
             6, 7, 4  // 第四个三角形
     };
     m_ibo = std::make_unique<IndexBuffer>(indices, 12);
-    m_ibo->Bind();
+    m_vao->AddBuffer(*m_ibo);
 
     // 创建shader
     const std::unordered_map<unsigned int, std::string> shader_files{
@@ -69,10 +68,8 @@ TestBatchRendering::TestBatchRendering() :
     };
 
     m_texture_0 = std::make_unique<Texture>("resources/cat.png", 0);
-    // m_texture_0->Unbind();
 
     m_texture_1 = std::make_unique<Texture>("resources/dog.png", 1);
-    // m_texture_1->Unbind();
 
     m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();

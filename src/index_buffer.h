@@ -1,13 +1,14 @@
 #pragma once
 
+#include <GL/glew.h>
+
 class IndexBuffer
 {
 public:
-    IndexBuffer(const unsigned int *data, unsigned int count);
-    ~IndexBuffer();
+    friend class VertexArray;
 
-    void Bind() const;
-    void Unbind() const;
+    IndexBuffer(const unsigned int *data, unsigned int count, GLenum usage = GL_STATIC_DRAW);
+    ~IndexBuffer();
 
     unsigned int GetCount() const { return m_count; }
 
