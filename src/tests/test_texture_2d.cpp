@@ -1,5 +1,7 @@
 #include "test_texture_2d.h"
 
+#include <memory>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
@@ -20,7 +22,6 @@ NAMESPACE_BEGIN(test)
 
 TestTexture2D::TestTexture2D() :
     m_vao(),
-    m_vbo(),
     m_shader(),
     m_translation_a(100.f, 200.f, 0.f),
     m_translation_b(100.f, 100.f, 0.f)
@@ -28,7 +29,6 @@ TestTexture2D::TestTexture2D() :
     // 创建vao，核心模式下不创建无法绘制
     // vao只会在调用glVertexAttribPointer时记录VBO的绑定情况
     m_vao = std::make_unique<VertexArray>();
-    m_vao->Bind();
 
     // 模型空间的各个顶点位置
     float positions[] = {
@@ -37,24 +37,22 @@ TestTexture2D::TestTexture2D() :
             50.f,  50.f,  1.f, 1.f, // 2
             -50.f, 50.f,  0.f, 1.f  // 3
     };
-    m_vbo = std::make_unique<VertexBuffer>(positions, 4 * 4 * sizeof(float));
-    m_vbo->Bind();
+    auto vbo = std::make_shared<VertexBuffer>(positions, 4 * 4 * sizeof(float));
 
     VertexBufferLayout layout;
     layout.PushAttribute<float>(2); // 位置坐标
     layout.PushAttribute<float>(2); // 纹理坐标
-    m_vao->AddBuffer(*m_vbo, layout);
+    m_vao->AddBuffer(vbo, layout);
 
     // ibo
     unsigned int indices[] = {
             0, 1, 2, // first triangle
             2, 3, 0  // second triangle
     };
-    m_ibo = std::make_unique<IndexBuffer>(indices, 6);
-    m_ibo->Bind();
+    auto ibo = std::make_shared<IndexBuffer>(indices, 6);
+    m_vao->AddBuffer(ibo);
 
     m_texture = std::make_unique<Texture>("resources/cats.png");
-    m_texture->Bind();
 
     // 创建shader
     const std::unordered_map<unsigned int, std::string> shader_files{
@@ -63,7 +61,7 @@ TestTexture2D::TestTexture2D() :
     };
     m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();
-    m_shader->SetUniform1i("u_Texture", 1);
+    m_shader->SetUniform1i("u_Texture", 0);
 }
 
 TestTexture2D::~TestTexture2D() {}
@@ -81,10 +79,10 @@ void TestTexture2D::OnRender()
 
     Renderer renderer;
     m_shader->SetUniformMat4f("u_MVP", mvp_a);
-    renderer.Draw(*m_vao, *m_ibo, *m_shader);
+    renderer.Draw(*m_vao, *m_shader);
 
     m_shader->SetUniformMat4f("u_MVP", mvp_b);
-    renderer.Draw(*m_vao, *m_ibo, *m_shader);
+    renderer.Draw(*m_vao, *m_shader);
 }
 
 void TestTexture2D::OnImGuiRender()

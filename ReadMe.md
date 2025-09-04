@@ -494,5 +494,75 @@ glVertexArrayAttribBinding(vao, 1, 1);  // attribute 1 改用 binding point 1
 
 # 8、动态上传顶点数据
 
- 在实际开发中我们经常需要修改顶点缓冲区的数据，而不是在程序一开始时就创建数据并上传至GPU，在OpenGL中有几种方法实现动态缓冲区中的数据，下面我们开始列举。
+ 在实际开发中我们经常需要修改顶点缓冲区的数据，而不是在程序一开始时就创建数据并上传至GPU，在OpenGL中有几种方法实现动态修改缓冲区中的数据。
 
+首先我们需要改变的是创建顶点缓冲区的写法，我们将数据指针设置为`nullptr`表明我们只想分配空间，无需上传数据，将`usage`声明为`  GL_DYNAMIC_DRAW`表明我们后面会经常修改：
+
+```C++
+    // 创建缓冲区并将数据上传到GPU
+    glCreateBuffers(1, &m_renderer_id);
+    glNamedBufferData(m_renderer_id, size, nullptr, GL_DYNAMIC_DRAW);
+```
+
+然后进入上传步骤，有多种方式把内存中的数据上传至GPU，列举如下。
+
+## 8.1 使用glMapBuffer(2.0+)/glMapNamedBuffer(4.5+)
+
+`glMapBuffer/glMapNamedBuffer`将指定的`VertexBuffer`的所有GPU空间映射到内存中，
+
+```C++
+VertexBuffer::VertexBuffer(const void *data, unsigned int size, GLenum usage)
+{
+    // 创建缓冲区并将数据上传到GPU
+    glCreateBuffers(1, &m_renderer_id);
+    glNamedBufferData(m_renderer_id, size, data, usage);
+    // GL_DYNAMIC_STORAGE_BIT保证缓冲可写（通过glBufferSubData等），GL_MAP_WRITE_BIT保证缓冲可映射且映射后可写
+    glNamedBufferStorage(m_renderer_id, size, data, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT);
+}
+
+void VertexBuffer::SubData(const void * data, size_t size)
+{
+    // 一般我们需要MAP后可以写就行
+    void *ptr = glMapNamedBuffer(m_renderer_id, GL_WRITE_ONLY);
+    if (ptr)
+    {
+        memcpy(ptr, data, size);
+        // 传输完必须调用unmap
+        glUnmapNamedBuffer(m_renderer_id);
+    }
+    else
+    {
+        std::cerr << "Failed to map buffer!" << std::endl;
+    }
+}
+```
+
+关于map系列函数的用法有几点注意事项：
+
+- 该函数返回的指针不能用于其他GL命令中
+- 当我们对返回指针所做的操作与access中表示的使用方式不符时（比如access使用GL_WRITE_ONLY，但是我们在使用的时候去读取该指针所表示的数据（也就是我们使用了类似于GL_READ_ONLY的用法），会导致未定义的结果，应用程序可能会因此崩溃）
+- 尽量保证使用access的方式与我们创建缓冲区对象所使用的标示一致，比如我们创建缓冲区对象的时候使用了GL_STATIC_READ，那么我们在使用access的时候使用GL_READ_ONLY，否则存取速度可能会慢几个数量级。
+
+## 8.2 使用glBufferSubData
+
+
+
+glBufferStorage, glNamedBufferStorage, glBufferData, 和 glNamedBufferData 都是OpenGL中用于管理缓冲对象（例如顶点缓冲、索引缓冲或通用目的缓冲）的函数，但它们在功能和行为上有一定的区别：
+
+glBufferData 和 glNamedBufferData
+
+glBufferData 函数分配一个新的可变大小的数据存储区域给当前绑定到指定目标的缓冲对象，并且可以将客户端内存中的数据复制到该缓冲区。这个函数创建的数据存储是可变的，意味着应用程序可以在任何时候重新定义或更新其内容。
+glNamedBufferData 直接作用于通过名称指定的缓冲对象，而不是依赖于当前绑定的对象。其功能与 glBufferData 类似，也是分配可变大小的存储空间并可选择性地填充数据。
+
+glBufferStorage 和 glNamedBufferStorage
+
+glBufferStorage 是一个更高级的函数，它分配的是不可变（immutable）或者持久化（persistent）的数据存储空间。一旦使用此函数创建了缓冲区，就不能改变其大小，而且根据所传入标志的不同，可能无法重写整个数据存储的内容。这对于GPU能够进行优化，比如预读取和缓存数据，提供了更强的保证。
+glNamedBufferStorage 同样直接作用于指定名称的缓冲对象，提供与 glBufferStorage 相同的功能，即分配不可变或持久化的存储空间。
+
+具体来说：
+
+- 可变性（Mutability）：glBufferData 系列函数允许创建可变存储，而 glBufferStorage 系列函数则默认创建不可变存储，除非指定了特定的标志允许部分修改。
+- 映射模式（Mapping Modes）：glBufferStorage 可以设置额外的标志来控制如何映射缓冲区到客户端内存，如是否支持读写映射等。
+- 性能提示（Usage Hints）：虽然 glBufferData 接受一个 usage 参数作为性能提示，但 glBufferStorage 并没有这样的参数，因为它通常暗示着对缓冲内容的长期持久利用。
+
+总之，glBufferData / glNamedBufferData 更适合需要频繁修改或一次性上传数据的应用场景；而 glBufferStorage / glNamedBufferStorage 则更适合那些希望优化存储管理和访问性能，尤其是当数据在程序运行过程中基本不变的情况下。

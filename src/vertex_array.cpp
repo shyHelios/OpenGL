@@ -27,10 +27,12 @@ void VertexArray::Unbind() const
     glBindVertexArray(0);
 }
 
-void VertexArray::AddBuffer(const VertexBuffer &vertex_buffer, const VertexBufferLayout &layout)
+void VertexArray::AddBuffer(const std::shared_ptr<VertexBuffer> &vertex_buffer, const VertexBufferLayout &layout)
 {
+    // 存储指针防止VertexBuffer析构
+    m_vertex_buffers.emplace_back(vertex_buffer);
     // 第二个参数是binding point，第四个参数是第一个vertex的偏移量，一般都是0
-    glVertexArrayVertexBuffer(m_renderer_id, 0, vertex_buffer.m_renderer_id, 0, layout.GetStride());
+    glVertexArrayVertexBuffer(m_renderer_id, 0, vertex_buffer->m_renderer_id, 0, layout.GetStride());
     const std::vector<VertexAttribute> attributes = layout.GetAttributes();
 
     // offset指定每个属性在顶点中的偏移量
@@ -43,14 +45,21 @@ void VertexArray::AddBuffer(const VertexBuffer &vertex_buffer, const VertexBuffe
         glEnableVertexArrayAttrib(m_renderer_id, i);
         // 定义attribute数据格式
         glVertexArrayAttribFormat(m_renderer_id, i, attribute.count, attribute.type, attribute.normalized, offset);
-        // 把attribute映射到某个binding point
+        // 把attribute i映射到binding point 0
         glVertexArrayAttribBinding(m_renderer_id, i, 0);
 
         offset += attribute.count * attribute.GetSizeOfType(attribute.type);
     }
 }
 
-void VertexArray::AddBuffer(const IndexBuffer &index_buffer)
+void VertexArray::AddBuffer(const std::shared_ptr<IndexBuffer> &index_buffer)
 {
-    glVertexArrayElementBuffer(m_renderer_id, index_buffer.m_renderer_id);
+    // 存储指针防止IndexBuffer析构
+    m_index_buffer = index_buffer;
+    glVertexArrayElementBuffer(m_renderer_id, index_buffer->m_renderer_id);
+}
+
+unsigned int VertexArray::GetCount() const
+{
+    return m_index_buffer->GetCount();
 }

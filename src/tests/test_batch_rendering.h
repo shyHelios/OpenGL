@@ -27,8 +27,6 @@ public:
 
 private:
     std::unique_ptr<VertexArray> m_vao;
-    std::unique_ptr<VertexBuffer> m_vbo;
-    std::unique_ptr<IndexBuffer> m_ibo;
     std::unique_ptr<Shader> m_shader;
     std::unique_ptr<Texture> m_texture_0;
     std::unique_ptr<Texture> m_texture_1;
