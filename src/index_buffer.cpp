@@ -5,7 +5,7 @@ IndexBuffer::IndexBuffer(const unsigned int *data, unsigned int count, GLenum us
     m_count(count)
 {
     glCreateBuffers(1, &m_renderer_id);
-    glNamedBufferData(m_renderer_id, count * sizeof(unsigned int), data, GL_STATIC_DRAW);
+    glNamedBufferData(m_renderer_id, count * sizeof(unsigned int), data, usage);
 }
 
 IndexBuffer::~IndexBuffer() {

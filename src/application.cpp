@@ -12,68 +12,35 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include "camera.h"
+
 #include "tests/test.h"
+#include "tests/test_batch_rendering.h"
 #include "tests/test_clear_color.h"
 #include "tests/test_texture_2d.h"
-#include "tests/test_batch_rendering.h"
 
-int window_width  = 1280;
-int window_height = 720;
+int WindowWidth  = 1920;
+int WindowHeight = 1080;
+
+Camera MyCamera(glm::vec3(0.f, 0.f, 100.f));
+static float sDeltaTime = 0.f;
 
 // Debug 回调函数
 void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                            const GLchar *message, const void *userParam)
-{
-    std::string sourceStr;
-    switch (source)
-    {
-        case GL_DEBUG_SOURCE_API: sourceStr = "API"; break;
-        case GL_DEBUG_SOURCE_WINDOW_SYSTEM: sourceStr = "Window System"; break;
-        case GL_DEBUG_SOURCE_SHADER_COMPILER: sourceStr = "Shader Compiler"; break;
-        case GL_DEBUG_SOURCE_THIRD_PARTY: sourceStr = "Third Party"; break;
-        case GL_DEBUG_SOURCE_APPLICATION: sourceStr = "Application"; break;
-        case GL_DEBUG_SOURCE_OTHER: sourceStr = "Other"; break;
-    }
+                            const GLchar* message, const void* userParam);
+void FrameBufferSizeCallback(GLFWwindow* Window, int Width, int Height);
+void ProcessInput(GLFWwindow* Window);
+// 鼠标移动回调函数
+void MouseCallback(GLFWwindow* Window, double XPos, double YPos);
 
-    std::string typeStr;
-    switch (type)
-    {
-        case GL_DEBUG_TYPE_ERROR: typeStr = "Error"; break;
-        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: typeStr = "Deprecated"; break;
-        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: typeStr = "Undefined"; break;
-        case GL_DEBUG_TYPE_PORTABILITY: typeStr = "Portability"; break;
-        case GL_DEBUG_TYPE_PERFORMANCE: typeStr = "Performance"; break;
-        case GL_DEBUG_TYPE_MARKER: typeStr = "Marker"; break;
-        case GL_DEBUG_TYPE_PUSH_GROUP: typeStr = "Push Group"; break;
-        case GL_DEBUG_TYPE_POP_GROUP: typeStr = "Pop Group"; break;
-        case GL_DEBUG_TYPE_OTHER: typeStr = "Other"; break;
-    }
-
-    std::string severityStr;
-    switch (severity)
-    {
-        case GL_DEBUG_SEVERITY_HIGH: severityStr = "HIGH"; break;
-        case GL_DEBUG_SEVERITY_MEDIUM: severityStr = "MEDIUM"; break;
-        case GL_DEBUG_SEVERITY_LOW: severityStr = "LOW"; break;
-        case GL_DEBUG_SEVERITY_NOTIFICATION: severityStr = "NOTIFICATION"; break;
-    }
-
-    std::cout << "[OpenGL Debug Message]"
-             << " Source: " << sourceStr << " | Type: " << typeStr << " | ID: " << id << " | Severity: " << severityStr
-             << "\n"
-             << message << "\n"
-             << std::endl;
-}
-
-void FrameBufferSizeCallback(GLFWwindow *window, int width, int height)
-{
-    // std::cout << "Frame buffer resize: ";
-    // std::cout << width << " " << height << std::endl;
-    window_width  = width;
-    window_height = height;
-    // proj          = glm::ortho(0.f, static_cast<float>(width), 0.f, static_cast<float>(height), -1.f, 1.f);
-    glViewport(0, 0, width, height);
-}
+/**
+ * @brief 鼠标滚轮回调
+ *
+ * @param window 
+ * @param xoffset 水平方向滚轮滚动值，向右滚为正，向左滚为负，一般滚一下大小为1
+ * @param yoffset 竖直方向滚轮滚动值，向上滚为正，向下滚为负，一般滚一下大小为1
+ */
+void ScrollCallback(GLFWwindow* Window, double XOffset, double YOffset);
 
 int main(void)
 {
@@ -85,7 +52,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow *window = glfwCreateWindow(window_width, window_height, "Hello World", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WindowWidth, WindowHeight, "Hello World", NULL, NULL);
     if (!window)
     {
         std::cout << "Failed to create window" << std::endl;
@@ -93,6 +60,8 @@ int main(void)
         glfwTerminate();
         return -1;
     }
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
@@ -124,6 +93,8 @@ int main(void)
 
     // 窗口大小改变时的回调函数
     glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
+    glfwSetCursorPosCallback(window, MouseCallback);
+    glfwSetScrollCallback(window, ScrollCallback);
 
     // 开启颜色混合
     glEnable(GL_BLEND);
@@ -132,24 +103,24 @@ int main(void)
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
 
-    ImGuiStyle &style = ImGui::GetStyle();
+    ImGuiStyle& style = ImGui::GetStyle();
     float main_scale  = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
     style.ScaleAllSizes(main_scale); // Bake a fixed style scale. (until we have a solution for dynamic style scaling,
     style.FontScaleDpi = main_scale;
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    const char *glsl_version = "#version 330";
+    const char* glsl_version = "#version 330";
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // 加载字体
-    ImGuiIO &io  = ImGui::GetIO();
-    ImFont *font = io.Fonts->AddFontFromFileTTF("resources/msyh.ttf", 18.0f, NULL,
-                                                io.Fonts->GetGlyphRangesChineseFull());
+    ImGuiIO& io = ImGui::GetIO();
+    ImFont* font =
+            io.Fonts->AddFontFromFileTTF("resources/msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
     IM_ASSERT(font != nullptr);
 
-    test::Test *current_test  = nullptr;
-    test::TestMenu *test_menu = new test::TestMenu(current_test);
+    test::Test* current_test  = nullptr;
+    test::TestMenu* test_menu = new test::TestMenu(current_test);
 
     // 指定默认的test为menu，每次从menu启动
     // current_test = test_menu;
@@ -159,10 +130,19 @@ int main(void)
     test_menu->RegisterTest<test::TestTexture2D>("TestTexture2D");
     test_menu->RegisterTest<test::TestBatchRendering>("TestBatchRendering");
 
+    float lastFrame = 0.f;
+
     while (!glfwWindowShouldClose(window))
     {
+        // 计算deltaTime
+        float currentFrame = static_cast<float>(glfwGetTime());
+        sDeltaTime         = currentFrame - lastFrame;
+        lastFrame          = currentFrame;
+
         // glfw处理输入
         glfwPollEvents();
+
+        ProcessInput(window);
 
         // OpenGL清屏
         glClearColor(0.5f, 0.5f, 0.5f, 1.f);
@@ -177,7 +157,8 @@ int main(void)
         {
             current_test->OnUpdate(0.f);
             current_test->OnRender();
-            ImGui::Begin("Test");
+            std::string testName     = current_test->GetName();
+            ImGui::Begin(testName.c_str());
             if (current_test != test_menu && ImGui::Button("return"))
             {
                 delete current_test;
@@ -209,4 +190,157 @@ int main(void)
     // 销毁OpenGL上下文
     glfwTerminate();
     return 0;
+}
+
+// debug回调函数
+void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                            const GLchar* message, const void* userParam)
+{
+    std::string sourceStr;
+    switch (source)
+    {
+        case GL_DEBUG_SOURCE_API:
+            sourceStr = "API";
+            break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+            sourceStr = "Window System";
+            break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER:
+            sourceStr = "Shader Compiler";
+            break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY:
+            sourceStr = "Third Party";
+            break;
+        case GL_DEBUG_SOURCE_APPLICATION:
+            sourceStr = "Application";
+            break;
+        case GL_DEBUG_SOURCE_OTHER:
+            sourceStr = "Other";
+            break;
+    }
+
+    std::string typeStr;
+    switch (type)
+    {
+        case GL_DEBUG_TYPE_ERROR:
+            typeStr = "Error";
+            break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+            typeStr = "Deprecated";
+            break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+            typeStr = "Undefined";
+            break;
+        case GL_DEBUG_TYPE_PORTABILITY:
+            typeStr = "Portability";
+            break;
+        case GL_DEBUG_TYPE_PERFORMANCE:
+            typeStr = "Performance";
+            break;
+        case GL_DEBUG_TYPE_MARKER:
+            typeStr = "Marker";
+            break;
+        case GL_DEBUG_TYPE_PUSH_GROUP:
+            typeStr = "Push Group";
+            break;
+        case GL_DEBUG_TYPE_POP_GROUP:
+            typeStr = "Pop Group";
+            break;
+        case GL_DEBUG_TYPE_OTHER:
+            typeStr = "Other";
+            break;
+    }
+
+    std::string severityStr;
+    switch (severity)
+    {
+        case GL_DEBUG_SEVERITY_HIGH:
+            severityStr = "HIGH";
+            break;
+        case GL_DEBUG_SEVERITY_MEDIUM:
+            severityStr = "MEDIUM";
+            break;
+        case GL_DEBUG_SEVERITY_LOW:
+            severityStr = "LOW";
+            break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+            severityStr = "NOTIFICATION";
+            break;
+    }
+
+    std::cout << "[OpenGL Debug Message]"
+              << " Source: " << sourceStr << " | Type: " << typeStr << " | ID: " << id << " | Severity: " << severityStr
+              << "\n"
+              << message << "\n"
+              << std::endl;
+}
+
+void FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    // std::cout << "Frame buffer resize: ";
+    // std::cout << width << " " << height << std::endl;
+    WindowWidth  = width;
+    WindowHeight = height;
+    // proj          = glm::ortho(0.f, static_cast<float>(width), 0.f, static_cast<float>(height), -1.f, 1.f);
+    glViewport(0, 0, width, height);
+}
+
+void ProcessInput(GLFWwindow* window)
+{
+    // ESC关闭窗口
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, true);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        MyCamera.ProcessKeyboard(ECameraMoveDirection::Forward, sDeltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        MyCamera.ProcessKeyboard(ECameraMoveDirection::Backward, sDeltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        MyCamera.ProcessKeyboard(ECameraMoveDirection::Left, sDeltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        MyCamera.ProcessKeyboard(ECameraMoveDirection::Right, sDeltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        MyCamera.ProcessKeyboard(ECameraMoveDirection::Down, sDeltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_E))
+    {
+        MyCamera.ProcessKeyboard(ECameraMoveDirection::Up, sDeltaTime);
+    }
+}
+
+/**
+ * @brief 鼠标移动时的回调函数。注意glfw窗口左上角坐标为(0, 0)
+ *
+ * @param window 鼠标所在的窗口
+ * @param xpos 鼠标在窗口中的x坐标
+ * @param ypos 鼠标在窗口中的y坐标
+ */
+void MouseCallback(GLFWwindow* Window, double XPos, double YPos)
+{
+    static float sLastX = WindowWidth / 2.f;
+    static float sLastY = WindowHeight / 2.f;
+
+    float xOffset = XPos - sLastX;
+    float yOffset = sLastY - YPos;
+
+    sLastX = XPos;
+    sLastY = YPos;
+
+    MyCamera.ProcessMouseMovement(xOffset, yOffset);
+}
+
+void ScrollCallback(GLFWwindow* Window, double XOffset, double YOffset)
+{
+    MyCamera.ProcessMouseScroll(YOffset);
 }

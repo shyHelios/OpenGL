@@ -7,6 +7,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 
+#include "../camera.h"
+
 #include "../core.h"
 #include "../index_buffer.h"
 #include "../renderer.h"
@@ -16,8 +18,9 @@
 #include "../vertex_buffer.h"
 #include "../vertex_buffer_layout.h"
 
-extern int window_width;
-extern int window_height;
+extern int WindowWidth;
+extern int WindowHeight;
+extern Camera MyCamera;
 
 NAMESPACE_BEGIN(test)
 
@@ -29,39 +32,44 @@ struct Vertex
     float tex_id;                    // 纹理id
 };
 
-std::array<Vertex, 4> CreateQuad(const glm::vec2 &pos, float size, float tex_id)
+Vertex* CreateQuad(Vertex* target, const glm::vec2& pos, float size, float tex_id)
 {
     float x = pos.x;
     float y = pos.y;
 
     Vertex v0;
-    v0.position   = {x, y};
-    v0.color      = {1.f, 0.f, 0.f};
-    v0.tex_coords = {0.f, 0.f};
-    v0.tex_id     = tex_id;
+    target->position   = {x, y};
+    target->color      = {1.f, 0.f, 0.f};
+    target->tex_coords = {0.f, 0.f};
+    target->tex_id     = tex_id;
+    target++;
 
     Vertex v1;
-    v1.position   = {x + size, y};
-    v1.color      = {1.f, 0.f, 0.f};
-    v1.tex_coords = {1.f, 0.f};
-    v1.tex_id     = tex_id;
+    target->position   = {x + size, y};
+    target->color      = {1.f, 0.f, 0.f};
+    target->tex_coords = {1.f, 0.f};
+    target->tex_id     = tex_id;
+    target++;
 
     Vertex v2;
-    v2.position   = {x + size, y + size};
-    v2.color      = {1.f, 0.f, 0.f};
-    v2.tex_coords = {1.f, 1.f};
-    v2.tex_id     = tex_id;
+    target->position   = {x + size, y + size};
+    target->color      = {1.f, 0.f, 0.f};
+    target->tex_coords = {1.f, 1.f};
+    target->tex_id     = tex_id;
+    target++;
 
     Vertex v3;
-    v3.position   = {x, y + size};
-    v3.color      = {1.f, 0.f, 0.f};
-    v3.tex_coords = {0.f, 1.f};
-    v3.tex_id     = tex_id;
+    target->position   = {x, y + size};
+    target->color      = {1.f, 0.f, 0.f};
+    target->tex_coords = {0.f, 1.f};
+    target->tex_id     = tex_id;
+    target++;
 
-    return {v0, v1, v2, v3};
+    return target;
 }
 
 TestBatchRendering::TestBatchRendering() :
+    Test("TestBatchRendering"),
     m_vao(),
     m_shader(),
     m_translation_a(100.f, 200.f, 0.f)
@@ -76,17 +84,20 @@ TestBatchRendering::TestBatchRendering() :
 
     // 动态修改GPU中的数据，数据指针设为nullptr只会分配空间，不会拷贝数据，
     // 设置为GL_DYNAMIC_DRAW表明我们会经常修改其中的数据
-    auto vbo = std::make_shared<VertexBuffer>(nullptr, 1000 * sizeof(Vertex), GL_DYNAMIC_DRAW);
+    auto vbo = std::make_shared<VertexBuffer>(nullptr, MaxVertexCount * sizeof(Vertex), GL_DYNAMIC_DRAW);
 
-    std::array<Vertex, 3> test;
+    std::array<Vertex, MaxVertexCount> vertices;
+    Vertex* buffer       = vertices.data();
+    uint32_t index_count = 0;
 
-    std::array<Vertex, 4> q0 = CreateQuad(glm::vec2(-50.f, -50.f), 100.f, 0.f);
-    std::array<Vertex, 4> q1 = CreateQuad(glm::vec2(100.f, -50.f), 100.f, 1.f);
-    Vertex vertices[8];
-    memcpy(vertices, q0.data(), q0.size() * sizeof(Vertex));
-    memcpy(vertices + q0.size(), q1.data(), q1.size() * sizeof(Vertex));
+    for (int x = 0; x < 5; x++)
+        for (int y = 0; y < 5; y++)
+        {
+            buffer = CreateQuad(buffer, glm::vec2(x * 50.f, y * 50.f), 50.f, (x + y) % 2);
+            index_count += 6;
+        }
 
-    vbo->SubData(vertices, sizeof(vertices));
+    vbo->SubData(vertices.data(), sizeof(vertices));
     VertexBufferLayout layout;
     layout.PushAttribute<float>(2); // 位置坐标
     layout.PushAttribute<float>(3); // 颜色
@@ -110,7 +121,7 @@ TestBatchRendering::TestBatchRendering() :
         offset += 4;
     }
 
-    auto ibo = std::make_shared<IndexBuffer>(indices, 12);
+    auto ibo = std::make_shared<IndexBuffer>(indices, index_count);
     m_vao->AddBuffer(ibo);
 
     // 创建shader
@@ -134,19 +145,25 @@ void TestBatchRendering::OnUpdate(float delta_time) {}
 
 void TestBatchRendering::OnRender()
 {
-    glm::mat4 proj  = glm::ortho(0.f, 640.f, 0.f, 480.f, -1.f, 1.f);
-    glm::mat4 model = glm::translate(glm::mat4(1.f), m_translation_a);
-    glm::mat4 mvp_a = proj * model;
-
+    // glm::mat4 projection = glm::ortho(0.f, 640.f, 0.f, 480.f, 0.01f, 1000.f);
+    
+    // glm::mat4 projection = glm::perspective();
+    // glm::mat4 model      = glm::translate(glm::mat4(1.f), m_translation_a);
+    // glm::mat4 mvp_a      = projection * model;
+    
     Renderer renderer;
-    m_shader->SetUniformMat4f("u_MVP", mvp_a);
+    
+    glm::mat4 view = MyCamera.GetViewMatrix();
+    glm::mat4 projection = MyCamera.GetProjectionMatrix();
+    m_shader->SetUniformMat4f("view", view);
+    m_shader->SetUniformMat4f("projection", projection);
     renderer.Draw(*m_vao, *m_shader);
 }
 
 void TestBatchRendering::OnImGuiRender()
 {
-    float x_max = static_cast<float>(window_width);
-    float y_max = static_cast<float>(window_height);
+    float x_max = static_cast<float>(WindowWidth);
+    float y_max = static_cast<float>(WindowHeight);
     ImGui::SliderFloat3("translation", &m_translation_a[0], 0.f, x_max);
 }
 

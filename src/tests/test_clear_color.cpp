@@ -5,7 +5,9 @@
 
 NAMESPACE_BEGIN(test)
 
-TestClearColor::TestClearColor() : m_clear_color{0.2f, 0.3f, 0.8f, 1.f}
+TestClearColor::TestClearColor() :
+    Test("TestClearColor"),
+    m_clear_color{0.2f, 0.3f, 0.8f, 1.f}
 {
     glGetFloatv(GL_COLOR_CLEAR_VALUE, m_original_clear_color);
 }

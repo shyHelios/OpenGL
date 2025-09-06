@@ -15,12 +15,13 @@
 #include "../vertex_buffer.h"
 #include "../vertex_buffer_layout.h"
 
-extern int window_width;
-extern int window_height;
+extern int WindowWidth;
+extern int WindowHeight;
 
 NAMESPACE_BEGIN(test)
 
 TestTexture2D::TestTexture2D() :
+    Test("TestTexture2D"),
     m_vao(),
     m_shader(),
     m_translation_a(100.f, 200.f, 0.f),
@@ -87,8 +88,8 @@ void TestTexture2D::OnRender()
 
 void TestTexture2D::OnImGuiRender()
 {
-    float x_max = static_cast<float>(window_width);
-    float y_max = static_cast<float>(window_height);
+    float x_max = static_cast<float>(WindowWidth);
+    float y_max = static_cast<float>(WindowHeight);
     ImGui::SliderFloat3("translation a", &m_translation_a[0], 0.f, x_max);
     ImGui::SliderFloat3("translation b", &m_translation_b[0], 0.f, x_max);
 }

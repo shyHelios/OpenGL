@@ -31,6 +31,8 @@ set(SOURCES
     src/shader.cpp
     src/renderer.cpp
     src/texture.cpp
+    src/batch_renderer.cpp
+    src/camera.cpp
     vendor/stb_image/stb_image.cpp
 )
 
