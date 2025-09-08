@@ -5,7 +5,8 @@
 
 #include <GL/glew.h>
 
-VertexBuffer::VertexBuffer(const void *data, unsigned int size, GLenum usage)
+VertexBuffer::VertexBuffer(const void* data, unsigned int size, GLenum usage) :
+    Size(size)
 {
     // 创建缓冲区并将数据上传到GPU
     glCreateBuffers(1, &m_renderer_id);
@@ -19,10 +20,10 @@ VertexBuffer::~VertexBuffer()
     glDeleteBuffers(1, &m_renderer_id);
 }
 
-void VertexBuffer::SubData(const void * data, size_t size)
+void VertexBuffer::SubData(const void* data, size_t size)
 {
     // 一般我们需要MAP后可以写就行
-    void *ptr = glMapNamedBuffer(m_renderer_id, GL_WRITE_ONLY);
+    void* ptr = glMapNamedBuffer(m_renderer_id, GL_WRITE_ONLY);
     if (ptr)
     {
         memcpy(ptr, data, size);
@@ -33,4 +34,9 @@ void VertexBuffer::SubData(const void * data, size_t size)
     {
         std::cerr << "Failed to map buffer!" << std::endl;
     }
+}
+
+unsigned int VertexBuffer::GetSize() const
+{
+    return Size;
 }

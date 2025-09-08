@@ -5,6 +5,7 @@ add_library(${TARGET_NAME}
     test_clear_color.cpp
     test_texture_2d.cpp
     test_batch_rendering.cpp
+    test_draw_cube.cpp
     test.cpp
 )
 target_include_directories(${TARGET_NAME} PRIVATE

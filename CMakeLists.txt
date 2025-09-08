@@ -33,6 +33,7 @@ set(SOURCES
     src/texture.cpp
     src/batch_renderer.cpp
     src/camera.cpp
+    src/fbo.cpp
     vendor/stb_image/stb_image.cpp
 )
 

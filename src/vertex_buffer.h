@@ -16,8 +16,11 @@ public:
     VertexBuffer(const void *data, unsigned int size, GLenum usage = GL_STATIC_DRAW);
     ~VertexBuffer();
 
+    unsigned int GetSize() const;
+
     void SubData(const void *data, size_t size);
 
 private:
     unsigned int m_renderer_id;
+    unsigned int Size;
 };

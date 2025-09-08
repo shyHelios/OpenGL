@@ -5,8 +5,8 @@
 
 NAMESPACE_BEGIN(test)
 
-TestClearColor::TestClearColor() :
-    Test("TestClearColor"),
+TestClearColor::TestClearColor(const std::string& InDisplayName) :
+    Test(InDisplayName),
     m_clear_color{0.2f, 0.3f, 0.8f, 1.f}
 {
     glGetFloatv(GL_COLOR_CLEAR_VALUE, m_original_clear_color);

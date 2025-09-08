@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "../core.h"
 #include "test.h"
 
@@ -8,7 +10,7 @@ NAMESPACE_BEGIN(test)
 class TestClearColor : public Test
 {
 public:
-    TestClearColor();
+    TestClearColor(const std::string &InDisplayName);
     ~TestClearColor();
 
     virtual void OnUpdate(float delta_time) override;

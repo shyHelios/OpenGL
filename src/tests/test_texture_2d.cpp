@@ -20,8 +20,8 @@ extern int WindowHeight;
 
 NAMESPACE_BEGIN(test)
 
-TestTexture2D::TestTexture2D() :
-    Test("TestTexture2D"),
+TestTexture2D::TestTexture2D(const std::string& InDisplayName) :
+    Test(InDisplayName),
     m_vao(),
     m_shader(),
     m_translation_a(100.f, 200.f, 0.f),

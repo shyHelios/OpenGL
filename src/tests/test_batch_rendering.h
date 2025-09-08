@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <memory>
 
 #include <glm/glm.hpp>
@@ -18,7 +19,7 @@ NAMESPACE_BEGIN(test)
 class TestBatchRendering : public Test
 {
 public:
-    TestBatchRendering();
+    TestBatchRendering(const std::string &InDisplayName);
     ~TestBatchRendering();
 
     virtual void OnUpdate(float delta_time) override;

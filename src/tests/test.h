@@ -12,21 +12,21 @@ NAMESPACE_BEGIN(test)
 class Test
 {
 public:
-    Test(const std::string InName) :
-        Name(InName)
+    Test(const std::string &InDisplayName) :
+        DisplayName(InDisplayName)
     {}
     virtual ~Test() {}
 
-    std::string GetName() const
+    std::string GetDisplayName() const
     {
-        return Name;
+        return DisplayName;
     }
 
     virtual void OnUpdate(float delta_time) {}
     virtual void OnRender() {}
     virtual void OnImGuiRender() {}
 
-    std::string Name;
+    std::string DisplayName;
 };
 
 class TestMenu : public Test
@@ -38,7 +38,7 @@ public:
     template<typename T> void RegisterTest(const std::string& test_name)
     {
         std::cout << "Registering Test: " << test_name << std::endl;
-        m_tests[test_name] = []() { return new T(); };
+        m_tests[test_name] = [test_name]() { return new T(test_name); };
     }
 
     void OnImGuiRender() override;

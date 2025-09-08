@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <memory>
 
 #include <glm/glm.hpp>
@@ -18,7 +19,7 @@ NAMESPACE_BEGIN(test)
 class TestTexture2D : public Test
 {
 public:
-    TestTexture2D();
+    TestTexture2D(const std::string &InDisplayName);
     ~TestTexture2D();
 
     virtual void OnUpdate(float delta_time) override;

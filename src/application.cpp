@@ -13,30 +13,38 @@
 #include <imgui_impl_opengl3.h>
 
 #include "camera.h"
+#include "fbo.h"
 
 #include "tests/test.h"
 #include "tests/test_batch_rendering.h"
 #include "tests/test_clear_color.h"
 #include "tests/test_texture_2d.h"
+#include "tests/test_draw_cube.h"
 
-int WindowWidth  = 1920;
-int WindowHeight = 1080;
+int WindowWidth   = 1920;
+int WindowHeight  = 1080;
+int ViewportWidth = 1280;
 
 Camera MyCamera(glm::vec3(0.f, 0.f, 100.f));
-static float sDeltaTime = 0.f;
+static float sDeltaTime    = 0.f;
+static bool bFPSModeActive = false;
 
-// Debug 回调函数
-void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                            const GLchar* message, const void* userParam);
+// 回调函数
+void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                  const GLchar* message, const void* userParam);
 void FrameBufferSizeCallback(GLFWwindow* Window, int Width, int Height);
-void ProcessInput(GLFWwindow* Window);
-// 鼠标移动回调函数
-void MouseCallback(GLFWwindow* Window, double XPos, double YPos);
+void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos);
+
+void ProcessInput(GLFWwindow* Window, ImGuiIO& io);
+void ProcessInputFPSMode(GLFWwindow* window);
+
+void DrawViewportWindow(const FrameBuffer& FrameBuffer);
+void DrawParametersWindow(test::Test*& CurrentTest, test::TestMenu* TestMenu);
 
 /**
  * @brief 鼠标滚轮回调
  *
- * @param window 
+ * @param window
  * @param xoffset 水平方向滚轮滚动值，向右滚为正，向左滚为负，一般滚一下大小为1
  * @param yoffset 竖直方向滚轮滚动值，向上滚为正，向下滚为负，一般滚一下大小为1
  */
@@ -52,7 +60,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(WindowWidth, WindowHeight, "Hello World", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WindowWidth, WindowHeight, "OpenGL实验场", NULL, NULL);
     if (!window)
     {
         std::cout << "Failed to create window" << std::endl;
@@ -60,8 +68,6 @@ int main(void)
         glfwTerminate();
         return -1;
     }
-
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
@@ -89,11 +95,11 @@ int main(void)
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
-    glDebugMessageCallback(DebugCallback, nullptr);
+    glDebugMessageCallback(OpenGLDebugCallback, nullptr);
 
     // 窗口大小改变时的回调函数
     glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
-    glfwSetCursorPosCallback(window, MouseCallback);
+    glfwSetCursorPosCallback(window, MouseMoveCallback);
     glfwSetScrollCallback(window, ScrollCallback);
 
     // 开启颜色混合
@@ -123,14 +129,14 @@ int main(void)
     test::TestMenu* test_menu = new test::TestMenu(current_test);
 
     // 指定默认的test为menu，每次从menu启动
-    // current_test = test_menu;
-    current_test = new test::TestBatchRendering();
-
-    test_menu->RegisterTest<test::TestClearColor>("TestClearColor");
-    test_menu->RegisterTest<test::TestTexture2D>("TestTexture2D");
-    test_menu->RegisterTest<test::TestBatchRendering>("TestBatchRendering");
+    current_test = test_menu;
+    test_menu->RegisterTest<test::TestClearColor>("颜色清除");
+    test_menu->RegisterTest<test::TestTexture2D>("2D纹理");
+    test_menu->RegisterTest<test::TestBatchRendering>("批量绘制");
+    test_menu->RegisterTest<test::TestDrawCube>("立方体");
 
     float lastFrame = 0.f;
+    FrameBuffer fbo(ViewportWidth, WindowHeight);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -139,34 +145,28 @@ int main(void)
         sDeltaTime         = currentFrame - lastFrame;
         lastFrame          = currentFrame;
 
-        // glfw处理输入
+        // 处理输入
         glfwPollEvents();
+        ProcessInput(window, io);
 
-        ProcessInput(window);
-
-        // OpenGL清屏
+        // ======================OpenGL场景绘制====================
+        fbo.Bind();
         glClearColor(0.5f, 0.5f, 0.5f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        // ImGui渲染开始
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
         if (current_test)
         {
             current_test->OnUpdate(0.f);
             current_test->OnRender();
-            std::string testName     = current_test->GetName();
-            ImGui::Begin(testName.c_str());
-            if (current_test != test_menu && ImGui::Button("return"))
-            {
-                delete current_test;
-                current_test = test_menu;
-            }
-            current_test->OnImGuiRender();
-            ImGui::End();
         }
+        fbo.Unbind();
+
+        // ======================ImGui绘制====================
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        DrawViewportWindow(fbo);
+        DrawParametersWindow(current_test, test_menu);
 
         ImGui::Render();                                        // ImGui准备DrawData
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); // ImGui执行绘制
@@ -193,8 +193,8 @@ int main(void)
 }
 
 // debug回调函数
-void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                            const GLchar* message, const void* userParam)
+void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                  const GLchar* message, const void* userParam)
 {
     std::string sourceStr;
     switch (source)
@@ -285,14 +285,41 @@ void FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-void ProcessInput(GLFWwindow* window)
+void ProcessInput(GLFWwindow* window, ImGuiIO& io)
 {
-    // ESC关闭窗口
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    ImVec2 mousePos = io.MousePos; // 鼠标在整个glfw窗口中的位置
+
+    float ViewportWidthFloat  = static_cast<float>(ViewportWidth);
+    float ViewportHeightFloat = static_cast<float>(WindowHeight);
+
+    bool bHover = mousePos.x >= 0.f && mousePos.x <= ViewportWidthFloat && mousePos.y >= 0.f &&
+                  mousePos.y <= ViewportHeightFloat;
+
+    // ===== 点击进入FPS摄像机模式 =====
+    if (!bFPSModeActive && bHover && ImGui::IsMouseClicked(0))
     {
-        glfwSetWindowShouldClose(window, true);
+        bFPSModeActive = true;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
+    // ===== Shift + F1 退出 FPS 模式 =====
+    if (bFPSModeActive && glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS &&
+        (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+         glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS))
+    {
+        bFPSModeActive = false;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    if (bFPSModeActive)
+    {
+        ProcessInputFPSMode(window);
+    }
+}
+
+void ProcessInputFPSMode(GLFWwindow* window)
+{
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
         MyCamera.ProcessKeyboard(ECameraMoveDirection::Forward, sDeltaTime);
@@ -326,8 +353,13 @@ void ProcessInput(GLFWwindow* window)
  * @param xpos 鼠标在窗口中的x坐标
  * @param ypos 鼠标在窗口中的y坐标
  */
-void MouseCallback(GLFWwindow* Window, double XPos, double YPos)
+void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos)
 {
+    if (!bFPSModeActive)
+    {
+        return;
+    }
+
     static float sLastX = WindowWidth / 2.f;
     static float sLastY = WindowHeight / 2.f;
 
@@ -343,4 +375,44 @@ void MouseCallback(GLFWwindow* Window, double XPos, double YPos)
 void ScrollCallback(GLFWwindow* Window, double XOffset, double YOffset)
 {
     MyCamera.ProcessMouseScroll(YOffset);
+}
+
+void DrawViewportWindow(const FrameBuffer& FrameBuffer)
+{
+    // 绘制viewport窗口
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0)); // 设置窗口无padding，否则会出现竖直滚动条
+    ImGui::SetNextWindowPos(ImVec2(0.f, 0.f)); // pivot默认(0, 0)表示pos是左上角，(1, 1)表示pos是右下角
+    ImGui::SetNextWindowSize(ImVec2(static_cast<float>(ViewportWidth), static_cast<float>(WindowHeight)));
+    ImGui::Begin("ViewPort", nullptr,
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    // ImGui左上角是(0, 0)，按顺时针(0, 1, 2)，(0, 2, 3)绘制两个三角形表示一个image，两个三角形的纹理从指定纹理ID中取
+    // Image中的uv0用于指定左上角的纹理坐标，uv1用于指定右下角的纹理坐标
+    // OpenGL纹理左下角是(0, 0)，直接传入OpenGL纹理，会导致图片上下颠倒
+    // 因此我们需要把OpenGL中纹理左上角和右下角的坐标给ImGui
+    ImVec2 uv0(0.f, 1.f);
+    ImVec2 uv1(1.f, 0.f);
+    ImVec2 textureSize(FrameBuffer.GetWidth(), FrameBuffer.GetHeight());
+    ImGui::Image((void*) (intptr_t) FrameBuffer.GetTexColorBufferID(), textureSize, uv0, uv1);
+    ImGui::End();
+    ImGui::PopStyleVar();
+}
+
+void DrawParametersWindow(test::Test*& CurrentTest, test::TestMenu* TestMenu)
+{
+    if (CurrentTest)
+    {
+        ImGui::SetNextWindowPos(ImVec2(static_cast<float>(ViewportWidth),
+                                       0.f)); // pivot默认(0, 0)表示pos是左上角，(1, 1)表示pos是右下角
+        ImGui::SetNextWindowSize(
+                ImVec2(static_cast<float>(WindowWidth - ViewportWidth), static_cast<float>(WindowHeight)));
+        std::string testName = CurrentTest->GetDisplayName();
+        ImGui::Begin(testName.c_str(), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+        if (CurrentTest != TestMenu && ImGui::Button("return"))
+        {
+            delete CurrentTest;
+            CurrentTest = TestMenu;
+        }
+        CurrentTest->OnImGuiRender();
+        ImGui::End();
+    }
 }
