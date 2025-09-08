@@ -11,9 +11,8 @@ TestMenu::TestMenu(Test *&current_test) : Test("测试列表"), m_current_test(c
 void TestMenu::OnImGuiRender() {
     for (auto &[test_name, create_test_func] : m_tests)
     {
-        if (ImGui::Button(test_name.c_str()))
+        if (ImGui::Selectable(test_name.c_str(), false))
         {
-            // 在这里生成test
             m_current_test = create_test_func();
         }
     }

@@ -18,8 +18,8 @@
 #include "tests/test.h"
 #include "tests/test_batch_rendering.h"
 #include "tests/test_clear_color.h"
-#include "tests/test_texture_2d.h"
 #include "tests/test_draw_cube.h"
+#include "tests/test_texture_2d.h"
 
 int WindowWidth   = 1920;
 int WindowHeight  = 1080;
@@ -103,11 +103,11 @@ int main(void)
     glfwSetScrollCallback(window, ScrollCallback);
 
     // 开启颜色混合
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     ImGui::CreateContext();
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsClassic();
 
     ImGuiStyle& style = ImGui::GetStyle();
     float main_scale  = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
@@ -155,7 +155,7 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
         if (current_test)
         {
-            current_test->OnUpdate(0.f);
+            current_test->OnUpdate(sDeltaTime);
             current_test->OnRender();
         }
         fbo.Unbind();
@@ -268,7 +268,7 @@ void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum 
             break;
     }
 
-    std::cout << "[OpenGL Debug Message]"
+    std::cout << "[OpenGL调试信息]"
               << " Source: " << sourceStr << " | Type: " << typeStr << " | ID: " << id << " | Severity: " << severityStr
               << "\n"
               << message << "\n"
@@ -277,17 +277,13 @@ void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum 
 
 void FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 {
-    // std::cout << "Frame buffer resize: ";
-    // std::cout << width << " " << height << std::endl;
     WindowWidth  = width;
     WindowHeight = height;
-    // proj          = glm::ortho(0.f, static_cast<float>(width), 0.f, static_cast<float>(height), -1.f, 1.f);
     glViewport(0, 0, width, height);
 }
 
 void ProcessInput(GLFWwindow* window, ImGuiIO& io)
 {
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     ImVec2 mousePos = io.MousePos; // 鼠标在整个glfw窗口中的位置
 
     float ViewportWidthFloat  = static_cast<float>(ViewportWidth);
@@ -297,7 +293,8 @@ void ProcessInput(GLFWwindow* window, ImGuiIO& io)
                   mousePos.y <= ViewportHeightFloat;
 
     // ===== 点击进入FPS摄像机模式 =====
-    if (!bFPSModeActive && bHover && ImGui::IsMouseClicked(0))
+    // 为了防止ColorEdit等组件覆盖viewport窗口时的点击导致进入FPS模式，要判断是否鼠标在ImGui组件上
+    if (!bFPSModeActive && bHover && ImGui::IsMouseClicked(0) && !ImGui::IsAnyItemHovered())
     {
         bFPSModeActive = true;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -407,12 +404,16 @@ void DrawParametersWindow(test::Test*& CurrentTest, test::TestMenu* TestMenu)
                 ImVec2(static_cast<float>(WindowWidth - ViewportWidth), static_cast<float>(WindowHeight)));
         std::string testName = CurrentTest->GetDisplayName();
         ImGui::Begin(testName.c_str(), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        if (CurrentTest != TestMenu && ImGui::Button("return"))
-        {
-            delete CurrentTest;
-            CurrentTest = TestMenu;
-        }
         CurrentTest->OnImGuiRender();
+        if (CurrentTest != TestMenu)
+        {
+            ImGui::Separator();
+            if (ImGui::Button("返回"))
+            {
+                delete CurrentTest;
+                CurrentTest = TestMenu;
+            }
+        }
         ImGui::End();
     }
 }

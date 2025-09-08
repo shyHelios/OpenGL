@@ -145,12 +145,6 @@ void TestBatchRendering::OnUpdate(float delta_time) {}
 
 void TestBatchRendering::OnRender()
 {
-    // glm::mat4 projection = glm::ortho(0.f, 640.f, 0.f, 480.f, 0.01f, 1000.f);
-
-    // glm::mat4 projection = glm::perspective();
-    // glm::mat4 model      = glm::translate(glm::mat4(1.f), m_translation_a);
-    // glm::mat4 mvp_a      = projection * model;
-
     Renderer renderer;
 
     glm::mat4 view       = MyCamera.GetViewMatrix();

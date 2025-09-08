@@ -31,8 +31,14 @@ private:
     std::unique_ptr<Shader> LightShader;
     std::unique_ptr<Texture> m_Texture;
 
+    glm::vec3 InitialLightPos       = glm::vec3(0.f, 20.f, 0.f);
+    glm::vec3 LightPos       = glm::vec3(0.f);
     glm::vec3 LightTranslate = glm::vec3(0.f);
-    glm::vec3 BoxTranslate   = glm::vec3(0.f);
+    glm::vec3 LightColor     = glm::vec3(1.f, 1.f, 1.f);
+
+    float BoxScale         = 30.f;
+    glm::vec3 BoxTranslate = glm::vec3(-30.f, 0.f, 0.f);
+    glm::vec3 BoxColor     = glm::vec3(0.8f, 0.6f, 0.f);
 };
 
 NAMESPACE_END(test)
