@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(test)
 
-TestMenu::TestMenu(Test *&current_test) : Test("TestMenu"), m_current_test(current_test) {}
+TestMenu::TestMenu(Test *&current_test) : Test("测试列表"), m_current_test(current_test) {}
 
 void TestMenu::OnImGuiRender() {
     for (auto &[test_name, create_test_func] : m_tests)

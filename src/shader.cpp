@@ -1,8 +1,10 @@
 #include "shader.h"
 
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
@@ -46,10 +48,10 @@ void Shader::SetUniform1i(const std::string& name, int value)
     glUniform1i(location, value);
 }
 
-void Shader::SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3)
+void Shader::SetUniform4f(const std::string& name, const glm::vec4& value)
 {
     int location = GetUniformLocation(name);
-    glUniform4f(location, v0, v1, v2, v3);
+    glUniform4f(location, value.x, value.y, value.z, value.w);
 }
 
 void Shader::SetUniform1iv(const std::string& name, int count, int* values)
@@ -74,9 +76,11 @@ int Shader::GetUniformLocation(const std::string& name) const
     int location = glGetUniformLocation(m_renderer_id, name.c_str());
 
     m_uniform_location_cache[name] = location;
+    // location等于-1不影响调用glUniform*函数，它会直接忽略
     if (location == -1)
     {
-        std::cout << "Get uniform location error!" << std::endl;
+        std::string errorStr = std::format("无法获取 uniform [{}] 的位置!", name);
+        std::cout << errorStr << std::endl;
         return -1;
     }
     return location;
@@ -87,7 +91,7 @@ std::string Shader::LoadShaderSource(const std::string& filepath)
     std::ifstream stream(filepath);
     if (!stream.is_open())
     {
-        std::cout << "Can't open file: " << filepath << std::endl;
+        std::cout << "无法打开文件: " << filepath << std::endl;
         return "";
     }
     std::stringstream buffer;
@@ -110,7 +114,7 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source_
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         char* message = (char*) alloca(length * sizeof(char));
         glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "Failed to compile shader: " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << std::endl;
+        std::cout << "无法编译着色器: " << (type == GL_VERTEX_SHADER ? "顶点着色器" : "片段着色器") << std::endl;
         std::cout << message << std::endl;
         glDeleteShader(id);
         return 0;

@@ -1,7 +1,9 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
+
+#include <glm/glm.hpp>
 
 #include "../core.h"
 #include "test.h"
@@ -23,9 +25,14 @@ public:
     virtual void OnImGuiRender() override;
 
 private:
-    std::unique_ptr<VertexArray> VAO;
-    std::unique_ptr<Shader> m_Shader;
+    std::unique_ptr<VertexArray> BoxVAO;
+    std::unique_ptr<VertexArray> LightVAO;
+    std::unique_ptr<Shader> BoxShader;
+    std::unique_ptr<Shader> LightShader;
     std::unique_ptr<Texture> m_Texture;
+
+    glm::vec3 LightTranslate = glm::vec3(0.f);
+    glm::vec3 BoxTranslate   = glm::vec3(0.f);
 };
 
 NAMESPACE_END(test)
