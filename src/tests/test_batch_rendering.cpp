@@ -74,6 +74,10 @@ TestBatchRendering::TestBatchRendering(const std::string& InDisplayName) :
     m_shader(),
     m_translation_a(100.f, 200.f, 0.f)
 {
+    // 开启颜色混合
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // 创建vao，核心模式下不创建无法绘制
     // vao只会在调用glVertexAttribPointer时记录VBO的绑定情况
     m_vao = std::make_unique<VertexArray>();
@@ -139,7 +143,10 @@ TestBatchRendering::TestBatchRendering(const std::string& InDisplayName) :
     m_shader->SetUniform1iv("u_Texture", 2, samplers);
 }
 
-TestBatchRendering::~TestBatchRendering() {}
+TestBatchRendering::~TestBatchRendering()
+{
+    glDisable(GL_BLEND);
+}
 
 void TestBatchRendering::OnUpdate(float delta_time) {}
 

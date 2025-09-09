@@ -24,6 +24,7 @@ public:
            float InMoveSpeed = 50.f, float InMouseSensitivity = 0.1f);
     ~Camera();
 
+    glm::vec3 GetPosition() const;
     glm::mat4 GetProjectionMatrix() const;
     glm::mat4 GetViewMatrix() const;
     void ProcessKeyboard(ECameraMoveDirection Direction, float DeltaTime);

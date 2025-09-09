@@ -5,11 +5,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-extern int WindowWidth;
-extern int WindowHeight;
+const int ViewportWidth  = 1280;
+const int ViewportHeight = 1080;
 
-Camera::Camera(const glm::vec3& InPosition, float InFovy, float InNear, float InFar,
-               float InMoveSpeed, float InMouseSensitivity) :
+Camera::Camera(const glm::vec3& InPosition, float InFovy, float InNear, float InFar, float InMoveSpeed,
+               float InMouseSensitivity) :
     Position(InPosition),
     Fovy(InFovy),
     Near(InNear),
@@ -22,10 +22,16 @@ Camera::Camera(const glm::vec3& InPosition, float InFovy, float InNear, float In
 
 Camera::~Camera() {}
 
+glm::vec3 Camera::GetPosition() const
+{
+    return Position;
+}
+
 glm::mat4 Camera::GetProjectionMatrix() const
 {
-    float aspectRatio   = static_cast<float>(WindowWidth) / static_cast<float>(WindowHeight);
-    return glm::perspective(Fovy, aspectRatio, Near, Far);
+    // FIXME: 这里设置的aspect ratio是正确的，但是正方体绘制不正确
+    float aspectRatio = static_cast<float>(ViewportWidth) / static_cast<float>(ViewportHeight);
+    return glm::perspective(glm::radians(Fovy), aspectRatio, Near, Far);
 }
 
 glm::mat4 Camera::GetViewMatrix() const
@@ -61,7 +67,8 @@ void Camera::ProcessKeyboard(ECameraMoveDirection Direction, float DeltaTime)
     }
 }
 
-void Camera::ProcessMouseMovement(float XOffset, float YOffset) {
+void Camera::ProcessMouseMovement(float XOffset, float YOffset)
+{
     XOffset *= MouseSensitivity;
     YOffset *= MouseSensitivity;
 

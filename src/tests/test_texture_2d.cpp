@@ -27,6 +27,10 @@ TestTexture2D::TestTexture2D(const std::string& InDisplayName) :
     m_translation_a(100.f, 200.f, 0.f),
     m_translation_b(100.f, 100.f, 0.f)
 {
+    // 开启颜色混合
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // 创建vao，核心模式下不创建无法绘制
     // vao只会在调用glVertexAttribPointer时记录VBO的绑定情况
     m_vao = std::make_unique<VertexArray>();
@@ -65,7 +69,10 @@ TestTexture2D::TestTexture2D(const std::string& InDisplayName) :
     m_shader->SetUniform1i("u_Texture", 0);
 }
 
-TestTexture2D::~TestTexture2D() {}
+TestTexture2D::~TestTexture2D()
+{
+    glDisable(GL_BLEND);
+}
 
 void TestTexture2D::OnUpdate(float delta_time) {}
 

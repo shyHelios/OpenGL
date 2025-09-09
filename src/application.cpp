@@ -102,10 +102,6 @@ int main(void)
     glfwSetCursorPosCallback(window, MouseMoveCallback);
     glfwSetScrollCallback(window, ScrollCallback);
 
-    // 开启颜色混合
-    // glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     ImGui::CreateContext();
     ImGui::StyleColorsClassic();
 
@@ -129,7 +125,8 @@ int main(void)
     test::TestMenu* test_menu = new test::TestMenu(current_test);
 
     // 指定默认的test为menu，每次从menu启动
-    current_test = test_menu;
+    // current_test = test_menu;
+    current_test = new test::TestDrawCube("立方体");
     test_menu->RegisterTest<test::TestClearColor>("颜色清除");
     test_menu->RegisterTest<test::TestTexture2D>("2D纹理");
     test_menu->RegisterTest<test::TestBatchRendering>("批量绘制");
@@ -152,7 +149,8 @@ int main(void)
         // ======================OpenGL场景绘制====================
         fbo.Bind();
         glClearColor(0.5f, 0.5f, 0.5f, 1.f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         if (current_test)
         {
             current_test->OnUpdate(sDeltaTime);
@@ -277,6 +275,7 @@ void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum 
 
 void FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
 {
+    // 注意，在窗口最小化时会触发该回调，此时会把窗口宽高都设置为0！
     WindowWidth  = width;
     WindowHeight = height;
     glViewport(0, 0, width, height);
@@ -388,6 +387,7 @@ void DrawViewportWindow(const FrameBuffer& FrameBuffer)
     // 因此我们需要把OpenGL中纹理左上角和右下角的坐标给ImGui
     ImVec2 uv0(0.f, 1.f);
     ImVec2 uv1(1.f, 0.f);
+    // 必须保证Image的大小和frame buffer object一致，否则会发生拉伸，导致物体变形
     ImVec2 textureSize(FrameBuffer.GetWidth(), FrameBuffer.GetHeight());
     ImGui::Image((void*) (intptr_t) FrameBuffer.GetTexColorBufferID(), textureSize, uv0, uv1);
     ImGui::End();

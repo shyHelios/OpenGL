@@ -14,14 +14,17 @@ FrameBuffer::FrameBuffer(int InWidth, int InHeight) :
     glCreateTextures(GL_TEXTURE_2D, 1, &TexColorBufferID);
     glTextureParameteri(TexColorBufferID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(TexColorBufferID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // 对于frame buffer一般用不到缠绕方式
-    // glTextureParameteri(TexColorBufferID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTextureParameteri(TexColorBufferID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // frame buffer的纹理附件用不到缠绕方式
     glTextureStorage2D(TexColorBufferID, 1, GL_RGBA8, Width, Height); // 分配存储空间，但是不上传数据
-    // glTextureSubImage2D(TexColorBufferID, 0, 0, 0, WindowWidth * 2 / 3, WindowHeight, GL_RGBA, GL_UNSIGNED_BYTE,
-    //                     m_local_buffer);
-
     glNamedFramebufferTexture(RenderID, GL_COLOR_ATTACHMENT0, TexColorBufferID, 0);
+
+    // 创建深度纹理附件
+    glCreateTextures(GL_TEXTURE_2D, 1, &TexDepthBufferID);
+    glTextureParameteri(TexDepthBufferID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(TexDepthBufferID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // 格式有很多种，GL_DEPTH_COMPONENT32(F)/GL_DEPTH_COMPONENT24/GL_DEPTH_COMPONENT16
+    glTextureStorage2D(TexDepthBufferID, 1, GL_DEPTH_COMPONENT32, Width, Height); // 分配存储空间，但是不上传数据
+    glNamedFramebufferTexture(RenderID, GL_DEPTH_ATTACHMENT, TexDepthBufferID, 0);
 
     if (glCheckNamedFramebufferStatus(RenderID, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     {

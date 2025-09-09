@@ -23,14 +23,16 @@ NAMESPACE_BEGIN(test)
 TestDrawCube::TestDrawCube(const std::string& InDisplayName) :
     Test(InDisplayName)
 {
+    // 开启深度测试
     glEnable(GL_DEPTH_TEST);
+
     // 物体vao
     BoxVAO = std::make_unique<VertexArray>();
 
     float vertices[] = {// 后面
                         -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.5f, 0.5f,
-                        -0.5f, 0.0f, 0.0f, -1.0f, 0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, -0.5f, 0.5f, -0.5f, 0.0f,
-                        0.0f, -1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
+                        -0.5f, 0.0f, 0.0f, -1.0f, 0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, -0.5f, 0.5f, -0.5f, 0.0f, 0.0f,
+                        -1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
                         // 前面
                         -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
                         0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
@@ -45,8 +47,8 @@ TestDrawCube::TestDrawCube(const std::string& InDisplayName) :
                         0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
                         // 下面
                         -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.5f, -0.5f,
-                        0.5f, 0.0f, -1.0f, 0.0f, 0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, -0.5f, -0.5f, 0.5f, 0.0f,
-                        -1.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
+                        0.5f, 0.0f, -1.0f, 0.0f, 0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, -0.5f, -0.5f, 0.5f, 0.0f, -1.0f,
+                        0.0f, -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
                         // 上面
                         -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f,
                         0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
@@ -77,10 +79,13 @@ TestDrawCube::TestDrawCube(const std::string& InDisplayName) :
     };
     LightShader = std::make_unique<Shader>(lightShaderFiles);
 
-    // m_Texture = std::make_unique<Texture>("resources/dog.png");
+    m_Texture = std::make_unique<Texture>("resources/dog.png");
 }
 
-TestDrawCube::~TestDrawCube() {}
+TestDrawCube::~TestDrawCube()
+{
+    glDisable(GL_DEPTH_TEST);
+}
 
 void TestDrawCube::OnUpdate(float delta_time)
 {
@@ -93,7 +98,6 @@ void TestDrawCube::OnRender()
     glm::mat4 view       = MyCamera.GetViewMatrix();
 
     glm::mat4 modelBox = glm::mat4(1.f);
-
     // glm::translate/rotate/scale都是model*T/R/S，在OpenGL中矩阵按列存储，顶点是列向量，要右乘，因此最后添加的变换先应用
     modelBox = glm::translate(modelBox, BoxTranslate);
     modelBox = glm::rotate(modelBox, glm::radians(30.f), glm::vec3(0.f, 1.f, 0.f)); // angle单位是弧度，
@@ -106,6 +110,7 @@ void TestDrawCube::OnRender()
     BoxShader->SetUniform3f("uLightColor", LightColor);
     BoxShader->SetUniform3f("uLightPos", LightPos);
     BoxShader->SetUniform3f("uObjectColor", BoxColor);
+    BoxShader->SetUniform3f("uCameraPos", MyCamera.GetPosition());
 
     Renderer renderer;
     renderer.Draw(*BoxVAO, *BoxShader);
@@ -113,10 +118,12 @@ void TestDrawCube::OnRender()
     glm::mat4 modelLight = glm::translate(glm::mat4(1.f), LightTranslate);
     modelLight           = glm::scale(modelLight, glm::vec3(10.f));
 
+    // 绘制光源立方体，便于确认光源位置
     LightShader->Bind();
     LightShader->SetUniformMat4f("uModel", modelLight);
     LightShader->SetUniformMat4f("uView", view);
     LightShader->SetUniformMat4f("uProjection", projection);
+    LightShader->SetUniform3f("uLightColor", LightColor);
 
     renderer.Draw(*LightVAO, *LightShader);
 }

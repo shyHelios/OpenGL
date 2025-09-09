@@ -16,6 +16,7 @@ public:
 private:
     unsigned int RenderID;
     unsigned int TexColorBufferID;
+    unsigned int TexDepthBufferID;
     int Width;
     int Height;
 };
