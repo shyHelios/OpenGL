@@ -15,8 +15,8 @@
 #include "../vertex_buffer.h"
 #include "../vertex_buffer_layout.h"
 
-extern int WindowWidth;
-extern int WindowHeight;
+extern const int WindowWidth;
+extern const int WindowHeight;
 
 NAMESPACE_BEGIN(test)
 

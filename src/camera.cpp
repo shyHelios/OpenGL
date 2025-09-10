@@ -5,8 +5,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-const int ViewportWidth  = 1280;
-const int ViewportHeight = 1080;
+extern int ViewportWidth;
+extern int ViewportHeight;
 
 Camera::Camera(const glm::vec3& InPosition, float InFovy, float InNear, float InFar, float InMoveSpeed,
                float InMouseSensitivity) :

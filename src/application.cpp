@@ -21,9 +21,14 @@
 #include "tests/test_draw_cube.h"
 #include "tests/test_texture_2d.h"
 
-int WindowWidth   = 1920;
-int WindowHeight  = 1080;
-int ViewportWidth = 1280;
+// 让窗口宽高可以在别的翻译单元访问
+extern const int WindowWidth;
+extern const int WindowHeight;
+const int WindowWidth  = 1920;
+const int WindowHeight = 1080;
+
+int ViewportWidth  = 1280;
+int ViewportHeight = WindowHeight;
 
 Camera MyCamera(glm::vec3(0.f, 0.f, 100.f));
 static float sDeltaTime    = 0.f;
@@ -98,7 +103,6 @@ int main(void)
     glDebugMessageCallback(OpenGLDebugCallback, nullptr);
 
     // 窗口大小改变时的回调函数
-    glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
     glfwSetCursorPosCallback(window, MouseMoveCallback);
     glfwSetScrollCallback(window, ScrollCallback);
 
@@ -133,7 +137,7 @@ int main(void)
     test_menu->RegisterTest<test::TestDrawCube>("立方体");
 
     float lastFrame = 0.f;
-    FrameBuffer fbo(ViewportWidth, WindowHeight);
+    FrameBuffer fbo(ViewportWidth, ViewportHeight);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -150,7 +154,7 @@ int main(void)
         fbo.Bind();
         glClearColor(0.5f, 0.5f, 0.5f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        glViewport(0.f, 0.f, ViewportWidth, WindowHeight);
         if (current_test)
         {
             current_test->OnUpdate(sDeltaTime);
@@ -273,14 +277,6 @@ void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum 
               << std::endl;
 }
 
-void FrameBufferSizeCallback(GLFWwindow* window, int width, int height)
-{
-    // 注意，在窗口最小化时会触发该回调，此时会把窗口宽高都设置为0！
-    WindowWidth  = width;
-    WindowHeight = height;
-    glViewport(0, 0, width, height);
-}
-
 void ProcessInput(GLFWwindow* window, ImGuiIO& io)
 {
     ImVec2 mousePos = io.MousePos; // 鼠标在整个glfw窗口中的位置
@@ -356,7 +352,7 @@ void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos)
         return;
     }
 
-    static float sLastX = WindowWidth / 2.f;
+    static float sLastX = ViewportWidth / 2.f;
     static float sLastY = WindowHeight / 2.f;
 
     float xOffset = XPos - sLastX;
@@ -378,7 +374,7 @@ void DrawViewportWindow(const FrameBuffer& FrameBuffer)
     // 绘制viewport窗口
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0)); // 设置窗口无padding，否则会出现竖直滚动条
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f)); // pivot默认(0, 0)表示pos是左上角，(1, 1)表示pos是右下角
-    ImGui::SetNextWindowSize(ImVec2(static_cast<float>(ViewportWidth), static_cast<float>(WindowHeight)));
+    ImGui::SetNextWindowSize(ImVec2(static_cast<float>(ViewportWidth), static_cast<float>(ViewportHeight)));
     ImGui::Begin("ViewPort", nullptr,
                  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     // ImGui左上角是(0, 0)，按顺时针(0, 1, 2)，(0, 2, 3)绘制两个三角形表示一个image，两个三角形的纹理从指定纹理ID中取

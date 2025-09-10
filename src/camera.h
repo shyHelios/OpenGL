@@ -20,7 +20,7 @@ class Camera
 {
 public:
     // 相机的近远平面默认分别为-0.01f和-100.f
-    Camera(const glm::vec3& InPosition, float InFovy = 45.f, float InNear = 0.1f, float InFar = 1000.f,
+    Camera(const glm::vec3& InPosition, float InFovy = 60.f, float InNear = 0.1f, float InFar = 1000.f,
            float InMoveSpeed = 50.f, float InMouseSensitivity = 0.1f);
     ~Camera();
 

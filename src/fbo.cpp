@@ -44,6 +44,7 @@ void FrameBuffer::Bind()
 
 void FrameBuffer::Unbind()
 {
+    // GL_FRAMEBUFFER = GL_DRAW_FRAMEBUFFER + GL_READ_FRAMEBUFFER
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
