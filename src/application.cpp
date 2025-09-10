@@ -45,10 +45,9 @@ void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum 
                                   const GLchar* message, const void* userParam);
 void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos);
 
-void ProcessInput(GLFWwindow* Window, ImGuiIO& io);
 void ProcessInputFPSMode(GLFWwindow* window);
 
-void DrawViewportWindow(const FrameBuffer& FrameBuffer);
+void DrawViewportWindow(const FrameBuffer& FrameBuffer,GLFWwindow* Window, ImGuiIO& io);
 void DrawParametersWindow(test::Test*& CurrentTest, test::TestMenu* TestMenu);
 
 /**
@@ -153,11 +152,10 @@ int main(void)
 
         // 处理输入
         glfwPollEvents();
-        ProcessInput(window, io);
 
         // ======================OpenGL场景绘制====================
         fbo.Bind();
-        glClearColor(0.5f, 0.5f, 0.5f, 1.f);
+        glClearColor(0.5f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // 必须有这一行，否则OpenGL还是以为把NDC坐标转换到外层窗口坐标
         glViewport(0.f, 0.f, ViewportWidth, ViewportHeight);
@@ -173,7 +171,7 @@ int main(void)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        DrawViewportWindow(fbo);
+        DrawViewportWindow(fbo, window, io);
         DrawParametersWindow(current_test, test_menu);
 
         ImGui::Render();                                        // ImGui准备DrawData
@@ -283,41 +281,14 @@ void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum 
               << std::endl;
 }
 
-void ProcessInput(GLFWwindow* window, ImGuiIO& io)
-{
-    ImVec2 mousePos = io.MousePos; // 鼠标在整个glfw窗口中的位置
-
-    float ViewportWidthFloat  = static_cast<float>(ViewportWidth);
-    float ViewportHeightFloat = static_cast<float>(ViewportHeight);
-
-    bool bHover = mousePos.x >= 0.f && mousePos.x <= ViewportWidthFloat && mousePos.y >= 0.f &&
-                  mousePos.y <= ViewportHeightFloat;
-
-    // ===== 鼠标左键点击进入FPS摄像机模式 =====
-    // 为了防止ColorEdit等组件覆盖viewport窗口时的点击导致进入FPS模式，要判断是否鼠标在ImGui组件上
-    // ImGui::IsMouseClicked(0)默认仅在鼠标左键刚被点击的那一帧返回true,如果鼠标按下不松，下一帧就不会再返回
-    // true，直到释放后再次按下
-    if (!bFPSModeActive && bHover && ImGui::IsMouseClicked(0) && !ImGui::IsAnyItemHovered())
-    {
-        bFPSModeActive = true;
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    }
-
-    // ===== 松开鼠标左键退出 FPS 模式 =====
-    if (bFPSModeActive && ImGui::IsMouseReleased(0))
-    {
-        bFPSModeActive = false;
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
-
-    if (bFPSModeActive)
-    {
-        ProcessInputFPSMode(window);
-    }
-}
-
 void ProcessInputFPSMode(GLFWwindow* window)
 {
+    // 非FPS相机模式直接返回
+    if (!bFPSModeActive)
+    {
+        return;
+    }
+
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
         MyCamera.ProcessKeyboard(ECameraMoveDirection::Forward, sDeltaTime);
@@ -357,6 +328,7 @@ void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos)
     static float sLastY   = 0.f;
     static bool firstInit = true;
 
+    // 非FPS相机模式直接返回
     if (!bFPSModeActive)
     {
         // 已经退出了需要保证下次进入时仍然会进行鼠标位置初始化
@@ -387,7 +359,7 @@ void ScrollCallback(GLFWwindow* Window, double XOffset, double YOffset)
     MyCamera.ProcessMouseScroll(YOffset);
 }
 
-void DrawViewportWindow(const FrameBuffer& FrameBuffer)
+void DrawViewportWindow(const FrameBuffer& FrameBuffer, GLFWwindow* Window, ImGuiIO& io)
 {
     // 绘制viewport窗口
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0)); // 设置窗口无padding，否则会出现竖直滚动条
@@ -403,7 +375,24 @@ void DrawViewportWindow(const FrameBuffer& FrameBuffer)
     ImVec2 uv1(1.f, 0.f);
     // 必须保证Image的大小和frame buffer object一致，否则会发生拉伸，导致物体变形
     ImVec2 textureSize(FrameBuffer.GetWidth(), FrameBuffer.GetHeight());
-    ImGui::Image((void*) (intptr_t) FrameBuffer.GetTexColorBufferID(), textureSize, uv0, uv1);
+    ImGui::Image((ImTextureID) (intptr_t) FrameBuffer.GetTexColorBufferID(), textureSize, uv0, uv1);
+    // 如果image被鼠标点击了
+    if (ImGui::IsItemClicked(0))
+    {
+        std::cout << "进入FPS模式" << std::endl;
+        bFPSModeActive = true;
+        glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+
+    if (bFPSModeActive && ImGui::IsMouseReleased(0))
+    {
+        std::cout << "退出FPS模式" << std::endl;
+        bFPSModeActive = false;
+        glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    ProcessInputFPSMode(Window);
+
     ImGui::End();
     ImGui::PopStyleVar();
 }
@@ -428,6 +417,7 @@ void DrawParametersWindow(test::Test*& CurrentTest, test::TestMenu* TestMenu)
                 CurrentTest = TestMenu;
             }
         }
+
         ImGui::End();
     }
 }

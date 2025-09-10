@@ -28,11 +28,12 @@ void main()
     float specularStrength = 0.5f;
     vec3 viewDir = normalize(uCameraPos - vWorldPosition);
     vec3 reflectDir = reflect(-lightDir, vNormal); // reflect要求输入的是指向平面的方向
-    float spec = pow(max(dot(viewDir, reflectDir), 0.f), 32);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.f), 1);
     vec3 specular = specularStrength * spec * uLightColor;
 
     vec3 result = (ambient + diffuse + specular) * uObjectColor;
-    color = vec4(vNormal, 1.f);
+    result = specular * uObjectColor;
+    color = vec4(result, 1.f);
     // vec3 depthColor = vec3(gl_FragCoord.z);
     // color = vec4(depthColor, 1.f);
 }
