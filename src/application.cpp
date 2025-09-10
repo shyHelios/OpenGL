@@ -1,3 +1,6 @@
+#include <Windows.h> // 锁定英文输入法使用
+#include <imm.h>
+
 #include <array>
 #include <iostream>
 #include <sstream>
@@ -5,6 +8,9 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h> // 获取原生窗口句柄
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -37,7 +43,6 @@ static bool bFPSModeActive = false;
 // 回调函数
 void APIENTRY OpenGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                   const GLchar* message, const void* userParam);
-void FrameBufferSizeCallback(GLFWwindow* Window, int Width, int Height);
 void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos);
 
 void ProcessInput(GLFWwindow* Window, ImGuiIO& io);
@@ -154,7 +159,8 @@ int main(void)
         fbo.Bind();
         glClearColor(0.5f, 0.5f, 0.5f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glViewport(0.f, 0.f, ViewportWidth, WindowHeight);
+        // 必须有这一行，否则OpenGL还是以为把NDC坐标转换到外层窗口坐标
+        glViewport(0.f, 0.f, ViewportWidth, ViewportHeight);
         if (current_test)
         {
             current_test->OnUpdate(sDeltaTime);
@@ -282,23 +288,23 @@ void ProcessInput(GLFWwindow* window, ImGuiIO& io)
     ImVec2 mousePos = io.MousePos; // 鼠标在整个glfw窗口中的位置
 
     float ViewportWidthFloat  = static_cast<float>(ViewportWidth);
-    float ViewportHeightFloat = static_cast<float>(WindowHeight);
+    float ViewportHeightFloat = static_cast<float>(ViewportHeight);
 
     bool bHover = mousePos.x >= 0.f && mousePos.x <= ViewportWidthFloat && mousePos.y >= 0.f &&
                   mousePos.y <= ViewportHeightFloat;
 
-    // ===== 点击进入FPS摄像机模式 =====
+    // ===== 鼠标左键点击进入FPS摄像机模式 =====
     // 为了防止ColorEdit等组件覆盖viewport窗口时的点击导致进入FPS模式，要判断是否鼠标在ImGui组件上
+    // ImGui::IsMouseClicked(0)默认仅在鼠标左键刚被点击的那一帧返回true,如果鼠标按下不松，下一帧就不会再返回
+    // true，直到释放后再次按下
     if (!bFPSModeActive && bHover && ImGui::IsMouseClicked(0) && !ImGui::IsAnyItemHovered())
     {
         bFPSModeActive = true;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
-    // ===== Shift + F1 退出 FPS 模式 =====
-    if (bFPSModeActive && glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS &&
-        (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-         glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS))
+    // ===== 松开鼠标左键退出 FPS 模式 =====
+    if (bFPSModeActive && ImGui::IsMouseReleased(0))
     {
         bFPSModeActive = false;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -347,13 +353,25 @@ void ProcessInputFPSMode(GLFWwindow* window)
  */
 void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos)
 {
+    static float sLastX   = 0.f;
+    static float sLastY   = 0.f;
+    static bool firstInit = true;
+
     if (!bFPSModeActive)
     {
+        // 已经退出了需要保证下次进入时仍然会进行鼠标位置初始化
+        firstInit = true;
         return;
     }
 
-    static float sLastX = ViewportWidth / 2.f;
-    static float sLastY = WindowHeight / 2.f;
+    // 如果sLastX和sLastY直接设置为屏幕中心，如果鼠标点击位置距viewport中心较远，第一次执行MouseMoveCallback可能会向相机传入很大的偏移量
+    // 导致镜头抖动，我们在第一次调用时初始化为鼠标点击的位置就不会产生大幅度抖动了
+    if (firstInit)
+    {
+        sLastX    = XPos;
+        sLastY    = YPos;
+        firstInit = false;
+    }
 
     float xOffset = XPos - sLastX;
     float yOffset = sLastY - YPos;
