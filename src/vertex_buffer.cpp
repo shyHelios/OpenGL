@@ -32,7 +32,7 @@ void VertexBuffer::SubData(const void* data, size_t size)
     }
     else
     {
-        std::cerr << "Failed to map buffer!" << std::endl;
+        std::cerr << "映射顶点缓冲失败!" << std::endl;
     }
 }
 

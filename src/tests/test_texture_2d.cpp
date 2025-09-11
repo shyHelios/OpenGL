@@ -57,12 +57,12 @@ TestTexture2D::TestTexture2D(const std::string& InDisplayName) :
     auto ibo = std::make_shared<IndexBuffer>(indices, 6);
     m_vao->AddBuffer(ibo);
 
-    m_texture = std::make_unique<Texture>("resources/cats.png");
+    m_texture = std::make_unique<Texture>("resources/texture2d/textures/cats.png");
 
     // 创建shader
     const std::unordered_map<unsigned int, std::string> shader_files{
-            {GL_VERTEX_SHADER,   "resources/shaders/basic.vert"},
-            {GL_FRAGMENT_SHADER, "resources/shaders/basic.frag"},
+            {GL_VERTEX_SHADER,   "resources/texture2d/shaders/basic.vert"},
+            {GL_FRAGMENT_SHADER, "resources/texture2d/shaders/basic.frag"},
     };
     m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();

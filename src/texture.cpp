@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <format>
 
 #include <GL/glew.h>
 #include <stb_image.h>
@@ -14,6 +15,12 @@ Texture::Texture(const std::string &filepath, unsigned int slot) :
 
     // desired channels设置为0维持原图channels不变
     m_local_buffer = stbi_load(filepath.c_str(), &m_width, &m_height, &m_channels, 0);
+    if (!m_local_buffer)
+    {
+        std::string errStr = std::format("纹理[{}]加载失败: {}", filepath, stbi_failure_reason());
+        std::cout << errStr << std::endl;
+        return;
+    }
 
     glCreateTextures(GL_TEXTURE_2D, 1, &m_renderer_id);
     glBindTextureUnit(slot, m_renderer_id);

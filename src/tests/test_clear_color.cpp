@@ -28,7 +28,7 @@ void TestClearColor::OnRender()
 
 void TestClearColor::OnImGuiRender()
 {
-    ImGui::ColorEdit4("Clear Color", m_clear_color);
+    ImGui::ColorEdit4("清屏颜色", m_clear_color, ImGuiColorEditFlags_Float);
 }
 
 NAMESPACE_END(test)

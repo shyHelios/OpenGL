@@ -68,18 +68,16 @@ TestDrawCube::TestDrawCube(const std::string& InDisplayName) :
     LightVAO->AddBuffer(vertexBuffer, lightLayout);
 
     std::unordered_map<unsigned int, std::string> boxShaderFiles{
-            {GL_VERTEX_SHADER,   "resources/shaders/test_draw_cube/cube.vert"},
-            {GL_FRAGMENT_SHADER, "resources/shaders/test_draw_cube/cube.frag"}
+            {GL_VERTEX_SHADER,   "resources/draw_cube/shaders/cube.vert"},
+            {GL_FRAGMENT_SHADER, "resources/draw_cube/shaders/cube.frag"}
     };
     BoxShader = std::make_unique<Shader>(boxShaderFiles);
 
     std::unordered_map<unsigned int, std::string> lightShaderFiles{
-            {GL_VERTEX_SHADER,   "resources/shaders/test_draw_cube/light.vert"},
-            {GL_FRAGMENT_SHADER, "resources/shaders/test_draw_cube/light.frag"}
+            {GL_VERTEX_SHADER,   "resources/draw_cube/shaders/light.vert"},
+            {GL_FRAGMENT_SHADER, "resources/draw_cube/shaders/light.frag"}
     };
     LightShader = std::make_unique<Shader>(lightShaderFiles);
-
-    m_Texture = std::make_unique<Texture>("resources/dog.png");
 }
 
 TestDrawCube::~TestDrawCube()
@@ -133,14 +131,14 @@ void TestDrawCube::OnImGuiRender()
     // 光源设置
     ImGui::Text("光源设置");
     ImGui::Separator();
-    ImGui::SliderFloat3("光源平移量", &LightTranslate[0], -100.f, 100.f, "%.2f");
+    ImGui::DragFloat3("光源平移量", &LightTranslate[0], DragSpeed, -100.f, 100.f, "%.2f");
     ImGui::ColorEdit3("光源颜色", &LightColor[0]);
 
     // 立方体设置
     ImGui::Text("立方体设置");
     ImGui::Separator();
-    ImGui::SliderFloat3("立方体平移量", &BoxTranslate[0], -100.f, 100.f, "%.2f");
-    ImGui::SliderFloat("立方体缩放", &BoxScale, 0.001f, 100.f, "%.2f");
+    ImGui::DragFloat3("立方体平移量", &BoxTranslate[0], DragSpeed, -100.f, 100.f, "%.2f");
+    ImGui::DragFloat3("立方体缩放", &BoxScale, DragSpeed, 0.001f, 100.f, "%.2f");
     ImGui::ColorEdit3("立方体颜色", &BoxColor[0]);
 }
 

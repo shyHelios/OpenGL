@@ -30,6 +30,12 @@ public:
     void ProcessKeyboard(ECameraMoveDirection Direction, float DeltaTime);
     void ProcessMouseMovement(float XOffset, float YOffset);
     void ProcessMouseScroll(float YOffset);
+    
+    void SetPosition(const glm::vec3& InPosition);
+    void SetPitch(float InPitch);
+    void SetYaw(float InYaw);
+
+    void PrintPose();
 
 private:
     void UpdateCameraVectors();

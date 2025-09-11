@@ -26,6 +26,8 @@
 #include "tests/test_clear_color.h"
 #include "tests/test_draw_cube.h"
 #include "tests/test_texture_2d.h"
+#include "tests/test_material.h"
+#include "tests/test_lighting_maps.h"
 
 // 让窗口宽高可以在别的翻译单元访问
 extern const int WindowWidth;
@@ -126,19 +128,21 @@ int main(void)
     // 加载字体
     ImGuiIO& io = ImGui::GetIO();
     ImFont* font =
-            io.Fonts->AddFontFromFileTTF("resources/msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+            io.Fonts->AddFontFromFileTTF("resources/common/msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
     IM_ASSERT(font != nullptr);
 
-    test::Test* current_test  = nullptr;
-    test::TestMenu* test_menu = new test::TestMenu(current_test);
+    test::Test* currentTest  = nullptr;
+    test::TestMenu* testMenu = new test::TestMenu(currentTest);
 
     // 指定默认的test为menu，每次从menu启动
-    // current_test = test_menu;
-    current_test = new test::TestDrawCube("立方体");
-    test_menu->RegisterTest<test::TestClearColor>("颜色清除");
-    test_menu->RegisterTest<test::TestTexture2D>("2D纹理");
-    test_menu->RegisterTest<test::TestBatchRendering>("批量绘制");
-    test_menu->RegisterTest<test::TestDrawCube>("立方体");
+    // currentTest = testMenu;
+    currentTest = new test::TestBatchRendering("批量绘制");
+    testMenu->RegisterTest<test::TestClearColor>("颜色清除");
+    testMenu->RegisterTest<test::TestTexture2D>("2D纹理");
+    testMenu->RegisterTest<test::TestBatchRendering>("批量绘制");
+    testMenu->RegisterTest<test::TestDrawCube>("立方体");
+    testMenu->RegisterTest<test::TestMaterial>("材质");
+    testMenu->RegisterTest<test::TestLightingMaps>("材质贴图");
 
     float lastFrame = 0.f;
     FrameBuffer fbo(ViewportWidth, ViewportHeight);
@@ -155,14 +159,14 @@ int main(void)
 
         // ======================OpenGL场景绘制====================
         fbo.Bind();
-        glClearColor(0.5f, 0.f, 0.f, 1.f);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // 必须有这一行，否则OpenGL还是以为把NDC坐标转换到外层窗口坐标
         glViewport(0.f, 0.f, ViewportWidth, ViewportHeight);
-        if (current_test)
+        if (currentTest)
         {
-            current_test->OnUpdate(sDeltaTime);
-            current_test->OnRender();
+            currentTest->OnUpdate(sDeltaTime);
+            currentTest->OnRender();
         }
         fbo.Unbind();
 
@@ -172,7 +176,7 @@ int main(void)
         ImGui::NewFrame();
 
         DrawViewportWindow(fbo, window, io);
-        DrawParametersWindow(current_test, test_menu);
+        DrawParametersWindow(currentTest, testMenu);
 
         ImGui::Render();                                        // ImGui准备DrawData
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); // ImGui执行绘制
@@ -181,11 +185,11 @@ int main(void)
         glfwSwapBuffers(window);
     }
 
-    delete current_test;
+    delete currentTest;
 
-    if (current_test != test_menu)
+    if (currentTest != testMenu)
     {
-        delete test_menu;
+        delete testMenu;
     }
 
     // ImGui清理

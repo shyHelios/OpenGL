@@ -1,9 +1,12 @@
 #include "camera.h"
 
 #include <iostream>
+#include <sstream>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "core.h"
 
 extern int ViewportWidth;
 extern int ViewportHeight;
@@ -82,6 +85,32 @@ void Camera::ProcessMouseScroll(float YOffset)
 {
     Fovy -= YOffset;
     Fovy = glm::clamp(Fovy, 1.f, 80.f);
+}
+
+void Camera::SetPosition(const glm::vec3& InPosition)
+{
+    Position = InPosition;
+}
+
+void Camera::SetPitch(float InPitch)
+{
+    Pitch = InPitch;
+    UpdateCameraVectors();
+}
+
+void Camera::SetYaw(float InYaw)
+{
+    Yaw = InYaw;
+    UpdateCameraVectors();
+}
+
+void Camera::PrintPose()
+{
+    std::stringstream ss;
+    ss << "相机位置: " << ToString(Position) << "\n";
+    ss << "Pitch: " << Pitch << "\n";
+    ss << "Yaw: " << Yaw << std::endl;
+    std::cout << ss.str();
 }
 
 void Camera::UpdateCameraVectors()

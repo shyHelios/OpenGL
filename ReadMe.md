@@ -627,3 +627,44 @@ phong式光照模型可以在顶点着色器中（使用顶点法线）实现，
 
 在不开启混合的情况下（默认情况），**新片元的颜色会直接覆盖color buffer中的颜色**。
 
+
+
+# MISC
+
+## GLSL中数据的精度问题
+
+我们先来看一段代码，假设我们想绘制一个正方形面，四个顶点全部传入一个数字`x=1.f`作为颜色，片元着色器如下：
+
+```glsl
+#version 330 core
+
+layout(location = 0) out vec4 color;
+in float vX; // 从顶点着色器传入
+
+void main()
+{
+    int x = int(vX);
+    color = vec4(x, x, x, 1.f);
+}
+```
+
+我们期待最终的颜色是白色，但实际绘制出来的颜色如下：
+
+<img src="ReadMe-imgs/float_accuracy_bug.png" style="zoom:50%;" />
+
+这是由于float精度问题，很多片元得到的vX值可能比1小一点点，经过`int`截断变为0，导致一些黑色穿插在白色中，有几个办法解决该问题：
+
+- 使用int类型存储离散值（推荐）
+
+  当在每个顶点中包含下标时，不要使用float类型，否则传入时需要经过`int`变换，需要非常小心地处理；
+
+- 转换int时选择合适的转换：截断/四舍五入
+
+  在glsl中使用四舍五入转换的方法如下：
+
+  ```glsl
+  int x = int(float_value + 0.5f);
+  ```
+
+  在传入下标时很容易
+

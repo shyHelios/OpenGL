@@ -29,7 +29,6 @@ private:
     std::unique_ptr<VertexArray> LightVAO;
     std::unique_ptr<Shader> BoxShader;
     std::unique_ptr<Shader> LightShader;
-    std::unique_ptr<Texture> m_Texture;
 
     glm::vec3 InitialLightPos       = glm::vec3(0.f, 20.f, 0.f);
     glm::vec3 LightPos       = glm::vec3(0.f);
@@ -39,6 +38,8 @@ private:
     float BoxScale         = 30.f;
     glm::vec3 BoxTranslate = glm::vec3(-30.f, 0.f, 0.f);
     glm::vec3 BoxColor     = glm::vec3(0.8f, 0.6f, 0.f);
+
+    float DragSpeed = 0.5f;
 };
 
 NAMESPACE_END(test)

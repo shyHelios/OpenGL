@@ -15,6 +15,8 @@ public:
     void Unbind() const;
 
     void SetUniform1i(const std::string& name, int value);
+
+    void SetUniform1f(const std::string& name, float value);
     void SetUniform3f(const std::string& name, const glm::vec3& value);
     void SetUniform4f(const std::string& name, const glm::vec4& value);
 

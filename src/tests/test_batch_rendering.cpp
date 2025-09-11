@@ -29,10 +29,10 @@ struct Vertex
     std::array<float, 2> position;   // 位置
     std::array<float, 3> color;      // 颜色
     std::array<float, 2> tex_coords; // 纹理坐标
-    float tex_id;                    // 纹理id
+    int tex_id;                      // 纹理id
 };
 
-Vertex* CreateQuad(Vertex* target, const glm::vec2& pos, float size, float tex_id)
+Vertex* CreateQuad(Vertex* target, const glm::vec2& pos, float size, int tex_id)
 {
     float x = pos.x;
     float y = pos.y;
@@ -74,6 +74,11 @@ TestBatchRendering::TestBatchRendering(const std::string& InDisplayName) :
     m_shader(),
     m_translation_a(100.f, 200.f, 0.f)
 {
+    // 设置相机pose
+    MyCamera.SetPosition(glm::vec3(122.175f, 99.5655f, 229.021f));
+    MyCamera.SetPitch(5.3f);
+    MyCamera.SetYaw(-91.3f);
+
     // 开启颜色混合
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -100,6 +105,10 @@ TestBatchRendering::TestBatchRendering(const std::string& InDisplayName) :
             buffer = CreateQuad(buffer, glm::vec2(x * 50.f, y * 50.f), 50.f, (x + y) % 2);
             index_count += 6;
         }
+
+    // int x = 1, y = 0;
+    // buffer = CreateQuad(buffer, glm::vec2(x * 50.f, y * 50.f), 50.f, (x + y) % 2);
+    // index_count += 6;
 
     vbo->SubData(vertices.data(), sizeof(vertices));
     VertexBufferLayout layout;
@@ -130,12 +139,12 @@ TestBatchRendering::TestBatchRendering(const std::string& InDisplayName) :
 
     // 创建shader
     const std::unordered_map<unsigned int, std::string> shader_files{
-            {GL_VERTEX_SHADER,   "resources/shaders/batch_color.vert"},
-            {GL_FRAGMENT_SHADER, "resources/shaders/batch_color.frag"},
+            {GL_VERTEX_SHADER,   "resources/batch_rendering/shaders/batch_color.vert"},
+            {GL_FRAGMENT_SHADER, "resources/batch_rendering/shaders/batch_color.frag"},
     };
 
-    m_texture_0 = std::make_unique<Texture>("resources/cat.png", 0);
-    m_texture_1 = std::make_unique<Texture>("resources/dog.png", 1);
+    m_texture_0 = std::make_unique<Texture>("resources/batch_rendering/textures/cat.png", 0);
+    m_texture_1 = std::make_unique<Texture>("resources/batch_rendering/textures/dog.png", 1);
 
     m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();
@@ -159,6 +168,8 @@ void TestBatchRendering::OnRender()
     m_shader->SetUniformMat4f("view", view);
     m_shader->SetUniformMat4f("projection", projection);
     renderer.Draw(*m_vao, *m_shader);
+
+    MyCamera.PrintPose();
 }
 
 void TestBatchRendering::OnImGuiRender()
