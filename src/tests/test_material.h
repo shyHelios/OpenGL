@@ -44,7 +44,7 @@ private:
     glm::vec3 BoxAmbient   = glm::vec3(0.0f, 0.1f, 0.06f);
     glm::vec3 BoxDiffuse   = glm::vec3(0.0f, 0.50980392f, 0.50980392f);
     glm::vec3 BoxSpecular  = glm::vec3(0.50196078f, 0.50196078f, 0.50196078f);
-    float BoxShininess = 25.f;
+    float BoxShininess     = 25.f; // 值越大高光范围越小
 
     float TransformDragSpeed = 0.5f;
     float ColorDragSpeed = 0.1f;

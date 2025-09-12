@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <array>
 
 #include <glm/glm.hpp>
 
@@ -12,13 +13,19 @@ class VertexArray;
 class Shader;
 class Texture;
 
+class PointLight;
+class DirectionalLight;
+class SpotLight;
+
 NAMESPACE_BEGIN(test)
 
-class TestLightingMaps : public Test
+constexpr int PointLightNum = 4;
+
+class TestLights : public Test
 {
 public:
-    TestLightingMaps(const std::string& InDisplayName);
-    ~TestLightingMaps();
+    TestLights(const std::string& InDisplayName);
+    ~TestLights();
 
     virtual void OnUpdate(float delta_time) override;
     virtual void OnRender() override;
@@ -27,22 +34,29 @@ public:
 private:
     std::unique_ptr<VertexArray> BoxVAO;
     std::unique_ptr<VertexArray> LightVAO;
+
     std::unique_ptr<Shader> BoxShader;
     std::unique_ptr<Shader> LightShader;
+
     std::unique_ptr<Texture> BoxDiffuseTexture;
     std::unique_ptr<Texture> BoxSpecularTexture;
 
-    glm::vec3 InitialLightPos = glm::vec3(0.f, 20.f, 0.f);
-    glm::vec3 LightPos        = glm::vec3(0.f);
-    glm::vec3 LightTranslate  = glm::vec3(0.f, -18.5f, 0.f);
-    glm::vec3 LightDiffuse    = glm::vec3(1.f, 1.f, 1.f);
-    glm::vec3 LightSpecular   = glm::vec3(1.f, 1.f, 1.f);
+    // 光源
+    int CurrentPointLightIndex = 0;
+    std::array<std::unique_ptr<PointLight>, PointLightNum> m_PointLights;
+    std::unique_ptr<DirectionalLight> m_DirectionalLight;
+    std::unique_ptr<SpotLight> m_SpotLight;
 
-    float BoxScale         = 30.f;
-    glm::vec3 BoxTranslate = glm::vec3(-30.f, 0.f, 0.f);
+    bool bDirectionalLightActivated = true;
+    bool bPointLightActivated       = false;
+    bool bSpotLightActivated        = false;
+
+    glm::vec3 LightTranslate = glm::vec3(0.f, 0.f, -7.f);
+
+    float BoxScale = 1.5f;
 
     // 值越大高光范围越小
-    float BoxShininess = 25.f;
+    float BoxShininess = 1.5f;
 
     float TransformDragSpeed = 0.5f;
     float ColorDragSpeed     = 0.1f;

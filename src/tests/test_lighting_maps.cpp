@@ -34,35 +34,36 @@ TestLightingMaps::TestLightingMaps(const std::string& InDisplayName) :
     // 物体vao
     BoxVAO = std::make_unique<VertexArray>();
 
-    float vertices[] = {// 后面
-                        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.5f, 0.5f,
-                        -0.5f, 0.0f, 0.0f, -1.0f, 0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, -0.5f, 0.5f, -0.5f, 0.0f, 0.0f,
-                        -1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-                        // 前面
-                        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
-                        0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-                        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-                        // 左面
-                        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, -0.5f, -0.5f,
-                        -0.5f, -1.0f, 0.0f, 0.0f, -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, -0.5f, -0.5f, 0.5f, -1.0f,
-                        0.0f, 0.0f, -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
-                        // 右面
-                        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.5f, -0.5f, -0.5f,
-                        1.0f, 0.0f, 0.0f, 0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-                        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-                        // 下面
-                        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.5f, -0.5f,
-                        0.5f, 0.0f, -1.0f, 0.0f, 0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, -0.5f, -0.5f, 0.5f, 0.0f, -1.0f,
-                        0.0f, -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
-                        // 上面
-                        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f,
-                        0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-                        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f};
+    float vertices[] = {
+            // positions(3 float) normal(3 float) texture coords(2 float)
+            -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 0.0f,
+            0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 1.0f,
+            -0.5f, 0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f,
 
+            -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
+            -0.5f, 0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
+
+            -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, -1.0f, 0.0f,  0.0f,  1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 1.0f, -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f, 0.5f,  -1.0f, 0.0f,  0.0f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  1.0f, 0.0f,
+
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+            0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+            0.5f,  -0.5f, 0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+            -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  1.0f, 1.0f,
+            0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  1.0f, 0.0f,
+            -0.5f, -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.0f, 1.0f,
+
+            -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+            -0.5f, 0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f};
     std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(vertices, sizeof(vertices));
     VertexBufferLayout boxLayout;
     boxLayout.PushAttribute<float>(3);
     boxLayout.PushAttribute<float>(3);
+    boxLayout.PushAttribute<float>(2);
     BoxVAO->AddBuffer(vertexBuffer, boxLayout);
 
     // 光源vao
@@ -70,11 +71,12 @@ TestLightingMaps::TestLightingMaps(const std::string& InDisplayName) :
     VertexBufferLayout lightLayout;
     lightLayout.PushAttribute<float>(3);
     lightLayout.PushAttribute<float>(3);
+    lightLayout.PushAttribute<float>(2);
     LightVAO->AddBuffer(vertexBuffer, lightLayout);
 
     std::unordered_map<unsigned int, std::string> boxShaderFiles{
-            {GL_VERTEX_SHADER,   "resources/lighting_maps/shaders/material.vert"},
-            {GL_FRAGMENT_SHADER, "resources/lighting_maps/shaders/material.frag"}
+            {GL_VERTEX_SHADER,   "resources/lighting_maps/shaders/box.vert"},
+            {GL_FRAGMENT_SHADER, "resources/lighting_maps/shaders/box.frag"}
     };
     BoxShader = std::make_unique<Shader>(boxShaderFiles);
 
@@ -83,6 +85,9 @@ TestLightingMaps::TestLightingMaps(const std::string& InDisplayName) :
             {GL_FRAGMENT_SHADER, "resources/lighting_maps/shaders/light.frag"}
     };
     LightShader = std::make_unique<Shader>(lightShaderFiles);
+
+    BoxDiffuseTexture = std::make_unique<Texture>("resources/lighting_maps/textures/container2.png", 0);
+    BoxSpecularTexture = std::make_unique<Texture>("resources/lighting_maps/textures/container2_specular.png", 1);
 }
 
 TestLightingMaps::~TestLightingMaps()
@@ -112,13 +117,11 @@ void TestLightingMaps::OnRender()
     BoxShader->SetUniformMat4f("uProjection", projection);
     BoxShader->SetUniform3f("uCameraPos", MyCamera.GetPosition());
 
-    BoxShader->SetUniform3f("uMaterial.ambient", BoxAmbient);
-    BoxShader->SetUniform3f("uMaterial.diffuse", BoxDiffuse);
-    BoxShader->SetUniform3f("uMaterial.specular", BoxSpecular);
+    BoxShader->SetUniform1i("uMaterial.diffuse", 0);
+    BoxShader->SetUniform1i("uMaterial.specular", 1);
     BoxShader->SetUniform1f("uMaterial.shininess", BoxShininess);
 
     BoxShader->SetUniform3f("uLight.position", LightPos);
-    BoxShader->SetUniform3f("uLight.ambient", LightAmbient);
     BoxShader->SetUniform3f("uLight.diffuse", LightDiffuse);
     BoxShader->SetUniform3f("uLight.specular", LightSpecular);
 
@@ -144,7 +147,6 @@ void TestLightingMaps::OnImGuiRender()
     ImGui::Text("光源设置");
     ImGui::Separator();
     ImGui::DragFloat3("光源平移量", &LightTranslate[0], TransformDragSpeed, -100.f, 100.f, "%.2f");
-    ImGui::ColorEdit3("环境光源颜色", &LightAmbient[0], ImGuiColorEditFlags_Float);
     ImGui::ColorEdit3("漫反射光源颜色", &LightDiffuse[0], ImGuiColorEditFlags_Float);
     ImGui::ColorEdit3("镜面反射光源颜色", &LightSpecular[0], ImGuiColorEditFlags_Float);
 
@@ -154,9 +156,6 @@ void TestLightingMaps::OnImGuiRender()
     ImGui::DragFloat3("立方体平移量", &BoxTranslate[0], TransformDragSpeed, -100.f, 100.f, "%.2f");
     ImGui::DragFloat("立方体缩放", &BoxScale, TransformDragSpeed, 0.001f, 100.f, "%.2f");
     // 材质
-    ImGui::ColorEdit3("环境光颜色", &BoxAmbient[0], ImGuiColorEditFlags_Float);
-    ImGui::ColorEdit3("漫反射率", &BoxDiffuse[0], ImGuiColorEditFlags_Float);
-    ImGui::ColorEdit3("镜面反射率", &BoxSpecular[0], ImGuiColorEditFlags_Float);
     ImGui::DragFloat("高光度", &BoxShininess, TransformDragSpeed, 1.f, 64.f, "%.1f");
 }
 

@@ -57,7 +57,7 @@ TestTexture2D::TestTexture2D(const std::string& InDisplayName) :
     auto ibo = std::make_shared<IndexBuffer>(indices, 6);
     m_vao->AddBuffer(ibo);
 
-    m_texture = std::make_unique<Texture>("resources/texture2d/textures/cats.png");
+    m_texture = std::make_unique<Texture>("resources/texture2d/textures/cats.png", 0);
 
     // 创建shader
     const std::unordered_map<unsigned int, std::string> shader_files{

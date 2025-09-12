@@ -25,9 +25,10 @@
 #include "tests/test_batch_rendering.h"
 #include "tests/test_clear_color.h"
 #include "tests/test_draw_cube.h"
-#include "tests/test_texture_2d.h"
-#include "tests/test_material.h"
 #include "tests/test_lighting_maps.h"
+#include "tests/test_lights.h"
+#include "tests/test_material.h"
+#include "tests/test_texture_2d.h"
 
 // 让窗口宽高可以在别的翻译单元访问
 extern const int WindowWidth;
@@ -49,7 +50,7 @@ void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos);
 
 void ProcessInputFPSMode(GLFWwindow* window);
 
-void DrawViewportWindow(const FrameBuffer& FrameBuffer,GLFWwindow* Window, ImGuiIO& io);
+void DrawViewportWindow(const FrameBuffer& FrameBuffer, GLFWwindow* Window, ImGuiIO& io);
 void DrawParametersWindow(test::Test*& CurrentTest, test::TestMenu* TestMenu);
 
 /**
@@ -71,6 +72,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     GLFWwindow* window = glfwCreateWindow(WindowWidth, WindowHeight, "OpenGL实验场", NULL, NULL);
     if (!window)
     {
@@ -126,9 +128,9 @@ int main(void)
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // 加载字体
-    ImGuiIO& io = ImGui::GetIO();
-    ImFont* font =
-            io.Fonts->AddFontFromFileTTF("resources/common/msyh.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+    ImGuiIO& io  = ImGui::GetIO();
+    ImFont* font = io.Fonts->AddFontFromFileTTF("resources/common/msyh.ttf", 18.0f, NULL,
+                                                io.Fonts->GetGlyphRangesChineseFull());
     IM_ASSERT(font != nullptr);
 
     test::Test* currentTest  = nullptr;
@@ -136,13 +138,14 @@ int main(void)
 
     // 指定默认的test为menu，每次从menu启动
     // currentTest = testMenu;
-    currentTest = new test::TestBatchRendering("批量绘制");
+    currentTest = new test::TestLights("灯光");
     testMenu->RegisterTest<test::TestClearColor>("颜色清除");
     testMenu->RegisterTest<test::TestTexture2D>("2D纹理");
     testMenu->RegisterTest<test::TestBatchRendering>("批量绘制");
     testMenu->RegisterTest<test::TestDrawCube>("立方体");
     testMenu->RegisterTest<test::TestMaterial>("材质");
     testMenu->RegisterTest<test::TestLightingMaps>("材质贴图");
+    testMenu->RegisterTest<test::TestLights>("灯光");
 
     float lastFrame = 0.f;
     FrameBuffer fbo(ViewportWidth, ViewportHeight);
@@ -383,14 +386,14 @@ void DrawViewportWindow(const FrameBuffer& FrameBuffer, GLFWwindow* Window, ImGu
     // 如果image被鼠标点击了
     if (ImGui::IsItemClicked(0))
     {
-        std::cout << "进入FPS模式" << std::endl;
+        // std::cout << "进入FPS模式" << std::endl;
         bFPSModeActive = true;
         glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
     if (bFPSModeActive && ImGui::IsMouseReleased(0))
     {
-        std::cout << "退出FPS模式" << std::endl;
+        // std::cout << "退出FPS模式" << std::endl;
         bFPSModeActive = false;
         glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
@@ -415,6 +418,11 @@ void DrawParametersWindow(test::Test*& CurrentTest, test::TestMenu* TestMenu)
         if (CurrentTest != TestMenu)
         {
             ImGui::Separator();
+            if (ImGui::Button("打印相机Pose"))
+            {
+                MyCamera.PrintPose();
+            }
+
             if (ImGui::Button("返回"))
             {
                 delete CurrentTest;

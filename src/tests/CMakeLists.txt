@@ -8,6 +8,7 @@ add_library(${TARGET_NAME}
     test_draw_cube.cpp
     test_material.cpp
     test_lighting_maps.cpp
+    test_lights.cpp
     test.cpp
 )
 target_include_directories(${TARGET_NAME} PRIVATE

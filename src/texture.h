@@ -5,7 +5,7 @@
 class Texture
 {
 public:
-    Texture(const std::string &filepath, unsigned int slot = 0);
+    Texture(const std::string &filepath, unsigned int slot);
     ~Texture();
 
 private:
