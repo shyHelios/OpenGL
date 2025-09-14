@@ -1,4 +1,4 @@
-#include "test_draw_cube.h"
+#include <og/tests/test_draw_cube.h>
 
 #include <string>
 #include <unordered_map>
@@ -7,14 +7,14 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 
-#include "../camera.h"
-#include "../index_buffer.h"
-#include "../renderer.h"
-#include "../shader.h"
-#include "../texture.h"
-#include "../vertex_array.h"
-#include "../vertex_buffer.h"
-#include "../vertex_buffer_layout.h"
+#include <og/core/camera.h>
+#include <og/core/index_buffer.h>
+#include <og/core/renderer.h>
+#include <og/core/shader.h>
+#include <og/core/texture.h>
+#include <og/core/vertex_array.h>
+#include <og/core/vertex_buffer.h>
+#include <og/core/vertex_buffer_layout.h>
 
 extern Camera MyCamera;
 

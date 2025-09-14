@@ -1,4 +1,4 @@
-#include "test_lights.h"
+#include <og/tests/test_lights.h>
 
 #include <format>
 #include <string>
@@ -8,14 +8,7 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 
-#include "../camera.h"
-#include "../index_buffer.h"
-#include "../renderer.h"
-#include "../shader.h"
-#include "../texture.h"
-#include "../vertex_array.h"
-#include "../vertex_buffer.h"
-#include "../vertex_buffer_layout.h"
+#include <og/og.h>
 
 extern Camera MyCamera;
 
@@ -158,8 +151,10 @@ TestLights::TestLights(const std::string& InDisplayName) :
     };
     LightShader = std::make_unique<Shader>(lightShaderFiles);
 
-    BoxDiffuseTexture  = std::make_unique<Texture>("resources/lights/textures/container2.png", 0);
-    BoxSpecularTexture = std::make_unique<Texture>("resources/lights/textures/container2_specular.png", 1);
+    BoxDiffuseTexture  = std::make_unique<Texture>("resources/lights/textures/container2.png");
+    BoxDiffuseTexture->Bind(0);
+    BoxSpecularTexture = std::make_unique<Texture>("resources/lights/textures/container2_specular.png");
+    BoxSpecularTexture->Bind(1);
 }
 
 TestLights::~TestLights()

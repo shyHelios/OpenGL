@@ -1,4 +1,4 @@
-#include "test_clear_color.h"
+#include <og/tests/test_clear_color.h>
 
 #include <GL/glew.h>
 #include <imgui.h>

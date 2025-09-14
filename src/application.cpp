@@ -18,22 +18,23 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-#include "camera.h"
-#include "fbo.h"
+#include <og/core/camera.h>
+#include <og/core/fbo.h>
 
-#include "tests/test.h"
-#include "tests/test_batch_rendering.h"
-#include "tests/test_clear_color.h"
-#include "tests/test_draw_cube.h"
-#include "tests/test_lighting_maps.h"
-#include "tests/test_lights.h"
-#include "tests/test_material.h"
-#include "tests/test_texture_2d.h"
+#include <og/tests/test.h>
+#include <og/tests/test_batch_rendering.h>
+#include <og/tests/test_clear_color.h>
+#include <og/tests/test_draw_cube.h>
+#include <og/tests/test_lighting_maps.h>
+#include <og/tests/test_lights.h>
+#include <og/tests/test_material.h>
+#include <og/tests/test_texture_2d.h>
+#include <og/tests/test_load_model.h>
 
 // 让窗口宽高可以在别的翻译单元访问
 extern const int WindowWidth;
 extern const int WindowHeight;
-const int WindowWidth  = 1920;
+const int WindowWidth  = 2200;
 const int WindowHeight = 1080;
 
 int ViewportWidth  = 1280;
@@ -138,7 +139,7 @@ int main(void)
 
     // 指定默认的test为menu，每次从menu启动
     // currentTest = testMenu;
-    currentTest = new test::TestLights("灯光");
+    currentTest = new test::TestLoadModel("加载模型");
     testMenu->RegisterTest<test::TestClearColor>("颜色清除");
     testMenu->RegisterTest<test::TestTexture2D>("2D纹理");
     testMenu->RegisterTest<test::TestBatchRendering>("批量绘制");
@@ -146,6 +147,7 @@ int main(void)
     testMenu->RegisterTest<test::TestMaterial>("材质");
     testMenu->RegisterTest<test::TestLightingMaps>("材质贴图");
     testMenu->RegisterTest<test::TestLights>("灯光");
+    testMenu->RegisterTest<test::TestLoadModel>("加载模型");
 
     float lastFrame = 0.f;
     FrameBuffer fbo(ViewportWidth, ViewportHeight);
@@ -363,6 +365,10 @@ void MouseMoveCallback(GLFWwindow* Window, double XPos, double YPos)
 
 void ScrollCallback(GLFWwindow* Window, double XOffset, double YOffset)
 {
+    if (!bFPSModeActive)
+    {
+        return;
+    }
     MyCamera.ProcessMouseScroll(YOffset);
 }
 

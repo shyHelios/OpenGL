@@ -1,8 +1,9 @@
-#include "test.h"
+#include <og/tests/test.h>
 
 #include <imgui.h>
 
-#include "../core.h"
+#include <og/core/core.h>
+#include <og/tests/test.h>
 
 NAMESPACE_BEGIN(test)
 

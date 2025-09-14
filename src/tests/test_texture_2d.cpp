@@ -1,4 +1,4 @@
-#include "test_texture_2d.h"
+#include <og/tests/test_texture_2d.h>
 
 #include <memory>
 
@@ -6,14 +6,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 
-#include "../core.h"
-#include "../index_buffer.h"
-#include "../renderer.h"
-#include "../shader.h"
-#include "../texture.h"
-#include "../vertex_array.h"
-#include "../vertex_buffer.h"
-#include "../vertex_buffer_layout.h"
+#include <og/core/core.h>
+#include <og/core/index_buffer.h>
+#include <og/core/renderer.h>
+#include <og/core/shader.h>
+#include <og/core/texture.h>
+#include <og/core/vertex_array.h>
+#include <og/core/vertex_buffer.h>
+#include <og/core/vertex_buffer_layout.h>
 
 extern const int WindowWidth;
 extern const int WindowHeight;
@@ -57,7 +57,8 @@ TestTexture2D::TestTexture2D(const std::string& InDisplayName) :
     auto ibo = std::make_shared<IndexBuffer>(indices, 6);
     m_vao->AddBuffer(ibo);
 
-    m_texture = std::make_unique<Texture>("resources/texture2d/textures/cats.png", 0);
+    m_texture = std::make_unique<Texture>("resources/texture2d/textures/cats.png");
+    m_texture->Bind(0);
 
     // 创建shader
     const std::unordered_map<unsigned int, std::string> shader_files{

@@ -1,4 +1,4 @@
-#include "test_lighting_maps.h"
+#include <og/tests/test_lighting_maps.h>
 
 #include <string>
 #include <unordered_map>
@@ -7,14 +7,7 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 
-#include "../camera.h"
-#include "../index_buffer.h"
-#include "../renderer.h"
-#include "../shader.h"
-#include "../texture.h"
-#include "../vertex_array.h"
-#include "../vertex_buffer.h"
-#include "../vertex_buffer_layout.h"
+#include <og/og.h>
 
 extern Camera MyCamera;
 
@@ -86,8 +79,10 @@ TestLightingMaps::TestLightingMaps(const std::string& InDisplayName) :
     };
     LightShader = std::make_unique<Shader>(lightShaderFiles);
 
-    BoxDiffuseTexture = std::make_unique<Texture>("resources/lighting_maps/textures/container2.png", 0);
-    BoxSpecularTexture = std::make_unique<Texture>("resources/lighting_maps/textures/container2_specular.png", 1);
+    BoxDiffuseTexture = std::make_unique<Texture>("resources/lighting_maps/textures/container2.png");
+    BoxDiffuseTexture->Bind(0);
+    BoxSpecularTexture = std::make_unique<Texture>("resources/lighting_maps/textures/container2_specular.png");
+    BoxSpecularTexture->Bind(1);
 }
 
 TestLightingMaps::~TestLightingMaps()

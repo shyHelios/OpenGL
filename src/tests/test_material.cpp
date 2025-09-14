@@ -1,4 +1,4 @@
-#include "test_material.h"
+#include <og/tests/test_material.h>
 
 #include <string>
 #include <unordered_map>
@@ -7,14 +7,7 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 
-#include "../camera.h"
-#include "../index_buffer.h"
-#include "../renderer.h"
-#include "../shader.h"
-#include "../texture.h"
-#include "../vertex_array.h"
-#include "../vertex_buffer.h"
-#include "../vertex_buffer_layout.h"
+#include <og/og.h>
 
 extern Camera MyCamera;
 

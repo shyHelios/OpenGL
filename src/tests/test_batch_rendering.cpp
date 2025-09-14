@@ -1,4 +1,4 @@
-#include "test_batch_rendering.h"
+#include <og/tests/test_batch_rendering.h>
 
 #include <array>
 #include <memory>
@@ -7,16 +7,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 
-#include "../camera.h"
-
-#include "../core.h"
-#include "../index_buffer.h"
-#include "../renderer.h"
-#include "../shader.h"
-#include "../texture.h"
-#include "../vertex_array.h"
-#include "../vertex_buffer.h"
-#include "../vertex_buffer_layout.h"
+#include <og/core/camera.h>
+#include <og/core/core.h>
+#include <og/core/index_buffer.h>
+#include <og/core/renderer.h>
+#include <og/core/shader.h>
+#include <og/core/texture.h>
+#include <og/core/vertex_array.h>
+#include <og/core/vertex_buffer.h>
+#include <og/core/vertex_buffer_layout.h>
 
 extern const int WindowWidth;
 extern const int WindowHeight;
@@ -143,8 +142,10 @@ TestBatchRendering::TestBatchRendering(const std::string& InDisplayName) :
             {GL_FRAGMENT_SHADER, "resources/batch_rendering/shaders/batch_color.frag"},
     };
 
-    m_texture_0 = std::make_unique<Texture>("resources/batch_rendering/textures/cat.png", 0);
-    m_texture_1 = std::make_unique<Texture>("resources/batch_rendering/textures/dog.png", 1);
+    m_texture_0 = std::make_unique<Texture>("resources/batch_rendering/textures/cat.png");
+    m_texture_0->Bind(0);
+    m_texture_1 = std::make_unique<Texture>("resources/batch_rendering/textures/dog.png");
+    m_texture_1->Bind(1);
 
     m_shader = std::make_unique<Shader>(shader_files);
     m_shader->Bind();
@@ -168,8 +169,6 @@ void TestBatchRendering::OnRender()
     m_shader->SetUniformMat4f("view", view);
     m_shader->SetUniformMat4f("projection", projection);
     renderer.Draw(*m_vao, *m_shader);
-
-    MyCamera.PrintPose();
 }
 
 void TestBatchRendering::OnImGuiRender()
